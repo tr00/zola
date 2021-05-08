@@ -13,6 +13,7 @@
 #include "ZL0.h"
 #include "ZL1.h"
 #include "ZL2.h"
+#include "ZL3.h"
 
 // types & structs
 
@@ -82,7 +83,7 @@ void debug_lexer(char *src)
     while(ZL1_lookahead(lex)->tag != TT_EOF)
     {
         token_t* tok = ZL1_consume(lex);
-        printf("[DEBUG] ");
+        printf("[DEBUG]\n");
         free(tok);
     }
 
@@ -92,8 +93,17 @@ void debug_lexer(char *src)
 
 int main(int argc, char **argv)
 {
-    // debug_lexer("(test)"); 
+    lexer_t* lex = ZL1_create("(add 2 3)", "<unknown>");
     
- 
+    expr_t* expr = ZL2_expr(lex);
+
+
+    value_t* value = ZL3_expr(expr, NULL);
+
+    if(value && value->tag == VT_CONSTANT)
+        printf("value: %d\n", value->val.__constant.val);
+
+    free(expr);
+    ZL1_free(lex);
     return 0;
 }

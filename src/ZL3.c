@@ -1,8 +1,10 @@
 #include <stdlib.h>
+#include <stdio.h>
 #include <string.h>
 
+#include "ZL0.h"
+#include "ZL2.h"
 #include "ZL3.h"
-
 
 value_t* __builtin_add(node_t* node, context_t* ctx)
 {
@@ -50,7 +52,6 @@ value_t* ZL3_node(node_t* node, context_t* ctx)
         {
             return ZL3_expr(node->val.expr, ctx);
         }
-
         ZL0_fatal("ZL3_node( corrupt, ... )");
     }
 

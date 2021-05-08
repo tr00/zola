@@ -4,8 +4,7 @@
 #ifndef __ZL2_H_
 #define __ZL2_H_
 
-#include "ZL1.h"
-
+typedef struct lexer_s lexer_t;
 typedef struct node_s node_t;
 
 typedef struct atom_s {
@@ -31,6 +30,7 @@ typedef struct node_s {
     } val;
     struct node_s *next;
 } node_t;
+
 
 atom_t* ZL2_atom(lexer_t* lex);
 expr_t* ZL2_expr(lexer_t* lex);
