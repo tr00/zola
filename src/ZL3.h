@@ -28,28 +28,18 @@ enum {
     ZL3_TYPE_I32 = 31000,
 
     ZL3_NODE_EXPR = 32000,
-    ZL3_NODE_ATOM = 32001,
-
-    ZL3_ATOM_CONSTANT = 33000,
-    ZL3_ATOM_BUILTIN = 33001,
+    ZL3_NODE_CONSTANT = 32001,
+    ZL3_NODE_BUILTIN = 32002,
 };
 
 /* structs */
-struct ZL3_IR_CONST {
+struct ZL3_IR_CONSTANT {
     int type;
     char* val;
 };
 
 struct ZL3_IR_BUILTIN {
     int tag;
-};
-
-struct ZL3_IR_ATOM {
-    int tag;
-    union {
-        struct ZL3_IR_CONST constant;
-        struct ZL3_IR_BUILTIN builtin;
-    } val;
 };
 
 struct ZL3_IR_EXPR {
@@ -59,7 +49,8 @@ struct ZL3_IR_EXPR {
 struct ZL3_IR_NODE {
     int tag;
     union {
-        struct ZL3_IR_ATOM atom;
+        struct ZL3_IR_BUILTIN builtin;
+        struct ZL3_IR_CONSTANT constant;
         struct ZL3_IR_EXPR expr;
     } val;
     struct ZL3_IR_NODE* next;
@@ -69,6 +60,6 @@ struct ZL3_IR_NODE {
 struct ZL3_IR_NODE* ZL3_visit_node(struct ZL2_AST_NODE* node);
 struct ZL3_IR_NODE* ZL3_visit_atom(struct ZL2_AST_ATOM* atom);
 struct ZL3_IR_NODE* ZL3_visit_expr(struct ZL2_AST_EXPR* expr);
-struct ZL3_IR_NODE* ZL3_visit_builtin(struct ZL2_AST_EXPR* expr);
+struct ZL3_IR_NODE* ZL3_visit_expr_builtin(struct ZL2_AST_EXPR* expr);
 
 #endif
