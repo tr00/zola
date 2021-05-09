@@ -4,7 +4,7 @@
 #include "ZL1.h"
 #include "ZL0.h"
 
-atom_t* ZL2_atom(lexer_t* lex)
+struct ZL2_AST_ATOM* ZL2_parse_atom(lexer_t* lex)
 /* expr => clean */
 /* NULL => leaks */
 {
@@ -12,21 +12,21 @@ atom_t* ZL2_atom(lexer_t* lex)
     {
         /* alloc: 000 */
         /* maybe-alloc: 001 */
-        token_t* tok = ZL1_lookahead(lex);
+        struct ZL1_TOKEN* tok = ZL1_lookahead(lex);
 
-        if(tok->tag == TT_INTEGER)
+        if(tok->tag == ZL1_TOKEN_INTEGER)
         {
-            atom_t* atom = (atom_t*) ZL0_malloc(sizeof(atom_t)); /* safe */
-            atom->tag = AT_INTEGER;
+            struct ZL2_AST_ATOM* atom = ZL0_malloc(sizeof(struct ZL2_AST_ATOM)); /* safe */
+            atom->tag = ZL2_ATOM_INTEGER;
             atom->val = tok->val; /* recycle: 001 */
 
             free(ZL1_consume(lex)); /* free: 000 */
             return atom;
         }
-        else if(tok->tag == TT_SYMBOL)
+        else if(tok->tag == ZL1_TOKEN_SYMBOL)
         {
-            atom_t* atom = (atom_t*) ZL0_malloc(sizeof(atom_t)); /* safe */
-            atom->tag = AT_SYMBOL;
+            struct ZL2_AST_ATOM* atom = ZL0_malloc(sizeof(struct ZL2_AST_ATOM)); /* safe */
+            atom->tag = ZL2_ATOM_SYMBOL;
             atom->val = tok->val; /* recycle: 001 */
 
             free(ZL1_consume(lex)); /* free: 000 */
@@ -43,7 +43,7 @@ atom_t* ZL2_atom(lexer_t* lex)
 
 
 
-expr_t* ZL2_expr(lexer_t* lex)
+struct ZL2_AST_EXPR* ZL2_parse_expr(lexer_t* lex)
 /* expr => clean */
 /* NULL => leaks */
 {
@@ -51,11 +51,11 @@ expr_t* ZL2_expr(lexer_t* lex)
     {
         /* alloc: 002 */
         /* alloc: 003 */
-        token_t* tok = ZL1_lookahead(lex); 
+        struct ZL1_TOKEN* tok = ZL1_lookahead(lex); 
     
-        if(tok->tag == TT_LPAREN)
+        if(tok->tag == ZL1_TOKEN_LPAREN)
         {
-            expr_t* expr = ZL0_malloc(sizeof(expr_t)); /* safe */
+            struct ZL2_AST_EXPR* expr = ZL0_malloc(sizeof(struct ZL2_AST_EXPR)); /* safe */
     
             /* free: 002 */
             /* null: 003 */
@@ -65,7 +65,7 @@ expr_t* ZL2_expr(lexer_t* lex)
             /* alloc: 005 */
             tok = ZL1_lookahead(lex); 
 
-            if(tok->tag == TT_RPAREN)
+            if(tok->tag == ZL1_TOKEN_RPAREN)
             {
                 /* free: 004 */
                 /* null: 005 */
@@ -74,13 +74,13 @@ expr_t* ZL2_expr(lexer_t* lex)
                 return expr;
             }
 
-            expr->head = ZL0_malloc(sizeof(node_t));
-            expr->head->tag = NT_ATOM;
+            expr->head = ZL0_malloc(sizeof(struct ZL2_AST_NODE));
+            expr->head->tag = ZL2_NODE_ATOM;
             
-            if((expr->head->val.atom = ZL2_atom(lex)) == NULL) /* else => free: 004 recycle: 005 */
+            if((expr->head->val.atom = ZL2_parse_atom(lex)) == NULL) /* else => free: 004 recycle: 005 */
             {
-                expr->head->tag = NT_EXPR;
-                if((expr->head->val.expr = ZL2_expr(lex)) == NULL) /* else => leaking: 004 005 */
+                expr->head->tag = ZL2_NODE_EXPR;
+                if((expr->head->val.expr = ZL2_parse_expr(lex)) == NULL) /* else => leaking: 004 005 */
                 {
                     /* dump */
                     ZL0_fatal("expected atom or expr");
@@ -91,23 +91,23 @@ expr_t* ZL2_expr(lexer_t* lex)
             /* alloc: 007 */
             tok = ZL1_lookahead(lex);
 
-            node_t* tail = expr->head; /* safe */
-            while(tok->tag != TT_RPAREN)
+            struct ZL2_AST_NODE* tail = expr->head; /* safe */
+            while(tok->tag != ZL1_TOKEN_RPAREN)
             {
-                if(tok->tag == TT_EOF)
+                if(tok->tag == ZL1_TOKEN_EOF)
                 {
                     /* dump */
                     ZL0_fatal("unexpected end of input");
                 }
 
-                node_t* node = ZL0_malloc(sizeof(node_t)); /* safe */
-                node->tag = NT_ATOM;
+                struct ZL2_AST_NODE* node = ZL0_malloc(sizeof(struct ZL2_AST_NODE)); /* safe */
+                node->tag = ZL2_NODE_ATOM;
                 /* free: 006|008 */
                 /* null|recycle: 007|009 */
-                if((node->val.atom = ZL2_atom(lex)) == NULL) 
+                if((node->val.atom = ZL2_parse_atom(lex)) == NULL) 
                 {
-                    node->tag = NT_EXPR;
-                    if((node->val.expr = ZL2_expr(lex)) == NULL)
+                    node->tag = ZL2_NODE_EXPR;
+                    if((node->val.expr = ZL2_parse_expr(lex)) == NULL)
                     {
                         /* dump */
                         ZL0_fatal("expected atom or expr");

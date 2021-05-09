@@ -73,6 +73,13 @@ char* ZL0_strncpy(char* dest, char* src, size_t n)
     return dest;
 }
 
+char* ZL0_strdup(char *src)
+{
+    char* dup = ZL0_malloc(strlen(src) + 1);
+    strcpy(dup, src);
+    return dup;
+}
+
 
 // driver
 
@@ -93,7 +100,7 @@ void debug_lexer(char *src)
 
 int main(int argc, char **argv)
 {
-    lexer_t* lex = ZL1_create("(add 2 3)", "<unknown>");
+    lexer_t* lex = ZL1_create("(putc 65)", "<unknown>");
     
     expr_t* expr = ZL2_expr(lex);
 

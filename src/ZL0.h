@@ -3,6 +3,8 @@
 
 #include <stddef.h>
 
+#define ZL0_assert(cond, msg) if(!cond) ZL0_fatal(msg);
+
 /**
  *
  */
@@ -22,6 +24,8 @@ void* ZL0_malloc(size_t);
  *
  */
 char* ZL0_strncpy(char*, char*, size_t);
+
+char* ZL0_strdup(char*);
 
 #endif
 

@@ -1,65 +1,74 @@
 /**
- *
+ * AST to IR compiler 
  */
 #ifndef __ZL3_H_
 #define __ZL3_H_
 
-#include "ZL2.h"
+/* import */
+struct ZL2_AST_NODE;
+struct ZL2_AST_ATOM;
+struct ZL2_AST_EXPR;
 
-typedef struct __constant_s {
-    int val;
-    // type
-} __constant_t;
+/* const */
+enum {
+    ZL3_BUILTIN_ADD = 30000,
+    ZL3_BUILTIN_SUB = 30001,
+    ZL3_BUILTIN_MUL = 30002,
+    ZL3_BUILTIN_UDIV = 30003,
+    ZL3_BUILTIN_SDIV = 30004,
+    ZL3_BUILTIN_UREM = 30005,
+    ZL3_BUILTIN_SREM = 30006,
+    ZL3_BUILTIN_SHL = 30007,
+    ZL3_BUILTIN_LSHR = 30008,
+    ZL3_BUILTIN_ASHR = 30009,
+    ZL3_BUILTIN_AND = 30010,
+    ZL3_BUILTIN_OR = 30011,
+    ZL3_BUILTIN_XOR = 30012,
 
-typedef struct __variable_s {
-    // type
-    // name
-} __variable_t;
+    ZL3_TYPE_I32 = 31000,
 
-typedef struct __function_s {
-    // 
-} __function_t;
+    ZL3_NODE_EXPR = 32000,
+    ZL3_NODE_ATOM = 32001,
 
-typedef struct value_s value_t;
-typedef struct context_s context_t;
+    ZL3_ATOM_CONSTANT = 33000,
+    ZL3_ATOM_BUILTIN = 33001,
+};
 
-typedef struct __builtin_s {
-    value_t* (*f)(node_t*, context_t*);
-    // rtype
-    // name
-} __builtin_t;
+/* structs */
+struct ZL3_IR_CONST {
+    int type;
+    char* val;
+};
 
-typedef struct value_s {
-    enum {
-        VT_CONSTANT,
-        VT_VARIABLE,
-        VT_FUNCTION,
-        VT_BUILTIN,
-        VT_NIL,
-    } tag;
+struct ZL3_IR_BUILTIN {
+    int tag;
+};
+
+struct ZL3_IR_ATOM {
+    int tag;
     union {
-        __constant_t __constant;
-        __variable_t __variable;
-        __function_t __function;
-        __builtin_t __builtin;
+        struct ZL3_IR_CONST constant;
+        struct ZL3_IR_BUILTIN builtin;
     } val;
-} value_t;
+};
 
-typedef struct dict_s {
-    struct dict_s *next;
-    char* hash;
-    __function_t* func;
-} dict_t;
+struct ZL3_IR_EXPR {
+    struct ZL3_IR_NODE* head;
+};
 
-typedef struct context_s {
-    struct context_s *parent;
-    dict_t *ftable;
-    // function table
-    // variable table
-} context_t;
+struct ZL3_IR_NODE {
+    int tag;
+    union {
+        struct ZL3_IR_ATOM atom;
+        struct ZL3_IR_EXPR expr;
+    } val;
+    struct ZL3_IR_NODE* next;
+};
 
-value_t* ZL3_node(node_t* node, context_t* ctx);
-value_t* ZL3_atom(atom_t* atom, context_t* ctx);
-value_t* ZL3_expr(expr_t* expr, context_t* ctx);
+/* functions */
+struct ZL3_IR_NODE* ZL3_visit_node(struct ZL2_AST_NODE* node);
+struct ZL3_IR_NODE* ZL3_visit_atom(struct ZL2_AST_ATOM* atom);
+struct ZL3_IR_NODE* ZL3_visit_expr(struct ZL2_AST_EXPR* expr);
+struct ZL3_IR_NODE* ZL3_visit_builtin(struct ZL2_AST_EXPR* expr);
 
 #endif
