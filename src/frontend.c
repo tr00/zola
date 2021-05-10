@@ -103,6 +103,7 @@ void debug_parser(char *src)
     struct ZL2_AST_EXPR* expr = ZL2_parse_expr(lex);
 
     ZL2_print_expr(*expr);
+    printf("\n");
 
     free(expr);
     ZL1_free(lex);
@@ -114,7 +115,7 @@ int main(int argc, char **argv)
     //debug_lexer("def!(times_two (x :: i32) { <<(x i32) })");
     //lexer_t* lex = ZL1_create("(putc 65)", "<unknown>");
     
-    debug_parser("{ a; b; c; }");
+    debug_parser("{ f; }( and some args )");
     //ZL1_free(lex);
     return 0;
 }

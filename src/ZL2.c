@@ -114,7 +114,7 @@ struct ZL2_AST_LIST* ZL2_parse_list(lexer_t* lex)
             struct ZL2_AST_LIST* node = ZL0_malloc(sizeof(struct ZL2_AST_LIST));
 
             node->expr = ZL2_parse_stmt(lex);
-            ZL0_assert(node, "expected stamtement or closing brace");
+            ZL0_assert(node->expr, "expected stamtement or closing brace");
 
             tail->next = node;
             tail = node;
@@ -158,7 +158,42 @@ struct ZL2_AST_EXPR* ZL2_parse_expr(lexer_t* lex)
     struct ZL1_TOKEN* tok = ZL1_lookahead(lex); 
     if(tok->tag == ZL1_TOKEN_LPAREN)
     {
-        // TODO: call
+        free(ZL1_consume(lex));
+        struct ZL2_AST_LIST* call = ZL0_malloc(sizeof(struct ZL2_AST_LIST));
+        call->expr = expr;
+        expr = ZL0_malloc(sizeof(struct ZL2_AST_EXPR));
+        expr->val.list = call;
+        expr->type = NULL;
+        expr->tag = ZL2_EXPR_CALL;
+
+        tok = ZL1_lookahead(lex);
+        if(tok->tag == ZL1_TOKEN_RPAREN)
+        {
+            free(ZL1_consume(lex));
+            call->next = NULL;
+        }
+        else
+        {
+            struct ZL2_AST_LIST* head = ZL0_malloc(sizeof(struct ZL2_AST_LIST));
+            call->next = head;
+            head->expr = ZL2_parse_expr(lex);
+            ZL0_assert(head->expr, "expected expression or closing parenthesis");
+
+            struct ZL2_AST_LIST* tail = head;
+            while((tok = ZL1_lookahead(lex))->tag != ZL1_TOKEN_RPAREN)
+            {
+                ZL0_assert(tok->tag != ZL1_TOKEN_EOF, "unexpected end of file");
+
+                struct ZL2_AST_LIST* node = ZL0_malloc(sizeof(struct ZL2_AST_LIST));
+
+                node->expr = ZL2_parse_expr(lex);
+                ZL0_assert(node->expr, "expected expression or closing parenthesis");
+
+                tail->next = node;
+                tail = node;
+            }
+            free(ZL1_consume(lex));
+        }
     }
     
     if(tok->tag == ZL1_TOKEN_COLONS)
@@ -201,7 +236,14 @@ void ZL2_print_expr(struct ZL2_AST_EXPR expr)
 {
     if(expr.tag == ZL2_EXPR_CALL)
     {
-        
+        printf("call[");
+        ZL2_print_expr(*expr.val.list->expr);
+        printf("|");
+        if(expr.val.list->next)
+        {
+            ZL2_print_list(*expr.val.list->next);
+        }
+        printf("]");
     }
     else if(expr.tag == ZL2_EXPR_ATOM)
     {

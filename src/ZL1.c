@@ -1,4 +1,4 @@
-#define __TRACE_LEXER
+// #define __TRACE_LEXER
 
 #include <stdlib.h>
 #include <stdio.h>
