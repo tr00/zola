@@ -10,14 +10,25 @@ typedef struct lexer_s {
     struct ZL1_TOKEN* next;
 } lexer_t;
 
+/**
+ *      LPAREN ::= \(
+ *      RPAREN ::= \)
+ *      LBRACE ::= \{
+ *      RBRACE ::= \}
+ *      COLONS ::= \:\:
+ *      INTEGER ::= \d+
+ *      SYMBOL ::= [a-zA-Z0-9_]+
+ *
+ */
+
+static int symbol_pattern(char c)
+{
+    return !(isspace(c) || c == '\0' ||  c == '(' || c == ')' || c == '{' || c == '}' || c == ':');
+}
+
 static void ZL1_next__(lexer_t* lex, struct ZL1_TOKEN* tok)
 {
-#ifndef NDEBUG
-    if(!lex || !tok)
-    {
-        ZL0_fatal("ZL1_next__( NULL , NULL )");
-    }
-#endif
+    ZL0_assert(lex && tok, "ZL1_next__( NULL , NULL )");
     tok->tag = ZL1_TOKEN_EOF;
     // skip spaces
     while(*lex->src != '\0' && isspace(*lex->src))
@@ -44,10 +55,38 @@ static void ZL1_next__(lexer_t* lex, struct ZL1_TOKEN* tok)
 
         lex->src += len;
     }
-    else if(isalnum(c) || c == '_')
+    else if(c == ':')
+    {
+        if(*(lex->src + 1) == ':')
+        {
+            tok->tag = ZL1_TOKEN_COLONS;
+            lex->src += 2;
+        }
+    }
+    else if(c == '(')
+    {
+        tok->tag = ZL1_TOKEN_LPAREN;
+        lex->src++;
+    }
+    else if(c == ')')
+    {
+        tok->tag = ZL1_TOKEN_RPAREN;
+        lex->src++;
+    }
+    else if(c == '{')
+    {
+        tok->tag = ZL1_TOKEN_LBRACE;
+        lex->src++;
+    }
+    else if(c == '}')
+    {
+        tok->tag = ZL1_TOKEN_RBRACE;
+        lex->src++;
+    }
+    else if(symbol_pattern(c))
     {
         size_t len = 1;
-        while(isalnum(*(lex->src + len)) || *(lex->src + len) == '_')
+        while(symbol_pattern(*(lex->src + len)))
         {
             len++;
         }
@@ -57,19 +96,6 @@ static void ZL1_next__(lexer_t* lex, struct ZL1_TOKEN* tok)
         ZL0_strncpy(tok->val, lex->src, len + 1);
 
         lex->src += len;
-    }
-    else
-    {
-        switch(c)
-        {
-            case '(': { tok->tag = ZL1_TOKEN_LPAREN; } break;
-            case ')': { tok->tag = ZL1_TOKEN_RPAREN; } break;
-            case '\0': break;
-            default:
-                // fprintf(stderr, "unknown character '\\%x'\n", *lex->src);
-                break;
-        }
-        lex->src++;
     }
 }
 
@@ -102,12 +128,7 @@ struct ZL1_TOKEN* ZL1_consume(lexer_t* lex)
 
 struct ZL1_TOKEN* ZL1_lookahead(lexer_t* lex)
 {
-#ifndef NDEBUG
-    if(lex == NULL)
-    {
-        ZL0_fatal("ZL1_lookahead( NULL )");
-    }
-#endif
+    ZL0_assert(lex, "ZL1_lookahead( NULL )");
 
 #ifdef __TRACE_LEXER
     static int count = 1;
@@ -120,13 +141,13 @@ struct ZL1_TOKEN* ZL1_lookahead(lexer_t* lex)
 
 lexer_t* ZL1_create(char* src, char* filename)
 {
-    lexer_t* lex = (lexer_t*) ZL0_malloc(sizeof(lexer_t)); /* safe */
+    lexer_t* lex = (lexer_t*) ZL0_malloc(sizeof(lexer_t)); 
 
     lex->src = src; /* unsafe */
     lex->filename = filename; /* unsafe */
     lex->lineno = 1;
 
-    lex->next = ZL0_malloc(sizeof(struct ZL1_TOKEN)); /* safe */
+    lex->next = ZL0_malloc(sizeof(struct ZL1_TOKEN)); 
     ZL1_next__(lex, lex->next);
 
     return lex;

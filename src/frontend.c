@@ -26,6 +26,7 @@ void __attribute__((__noreturn__)) ZL0_fatal(const char *msg)
 {
     // memory managing is done by the OS
     fprintf(stderr, "error: %s\n", msg);
+    fprintf(stderr, "   @ %s:%d\n", __FILE__, __LINE__);
     exit(-1);
 }
 
@@ -87,10 +88,10 @@ void debug_lexer(char *src)
 {
     lexer_t* lex = ZL1_create(src, "<debug>");
 
-    while(ZL1_lookahead(lex)->tag != TT_EOF)
+    while(ZL1_lookahead(lex)->tag != ZL1_TOKEN_EOF)
     {
-        token_t* tok = ZL1_consume(lex);
-        printf("[DEBUG]\n");
+        struct ZL1_TOKEN* tok = ZL1_consume(lex);
+        printf("[LEXER] >> %d\n", tok->tag);
         free(tok);
     }
 
@@ -100,17 +101,9 @@ void debug_lexer(char *src)
 
 int main(int argc, char **argv)
 {
-    lexer_t* lex = ZL1_create("(putc 65)", "<unknown>");
+    debug_lexer("def!(times_two (x :: i32) { <<(x i32) })");
+    //lexer_t* lex = ZL1_create("(putc 65)", "<unknown>");
     
-    expr_t* expr = ZL2_expr(lex);
-
-
-    value_t* value = ZL3_expr(expr, NULL);
-
-    if(value && value->tag == VT_CONSTANT)
-        printf("value: %d\n", value->val.__constant.val);
-
-    free(expr);
-    ZL1_free(lex);
+    //ZL1_free(lex);
     return 0;
 }
