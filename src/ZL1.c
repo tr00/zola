@@ -1,4 +1,7 @@
+#define __TRACE_LEXER
+
 #include <stdlib.h>
+#include <stdio.h>
 #include <ctype.h>
 
 #include "ZL0.h"
@@ -11,6 +14,7 @@ typedef struct lexer_s {
 } lexer_t;
 
 /**
+ *      SEMICOLON ::= \;
  *      LPAREN ::= \(
  *      RPAREN ::= \)
  *      LBRACE ::= \{
@@ -23,7 +27,7 @@ typedef struct lexer_s {
 
 static int symbol_pattern(char c)
 {
-    return !(isspace(c) || c == '\0' ||  c == '(' || c == ')' || c == '{' || c == '}' || c == ':');
+    return !(isspace(c) || c == '\0' ||  c == '(' || c == ')' || c == '{' || c == '}' || c == ':' || c == ';');
 }
 
 static void ZL1_next__(lexer_t* lex, struct ZL1_TOKEN* tok)
@@ -54,6 +58,11 @@ static void ZL1_next__(lexer_t* lex, struct ZL1_TOKEN* tok)
         ZL0_strncpy(tok->val, lex->src, len + 1);
 
         lex->src += len;
+    }
+    else if(c == ';')
+    {
+        tok->tag = ZL1_TOKEN_SEMICOLON;
+        lex->src++;
     }
     else if(c == ':')
     {
@@ -112,11 +121,11 @@ struct ZL1_TOKEN* ZL1_consume(lexer_t* lex)
         static int count = 1;
         if(tok)
         {
-            printf("__lex_consume( ... ) # %d -> ", count);
+            printf("ZL1_consume#%d( ... ) -> ...\n", count);
         }
         else
         {
-            printf("__lex_consume( ... ) # %d -> NULL\n", count);
+            printf("ZL1_consume#%d( ... ) -> NULL\n", count);
         }
         count++;
 #endif
@@ -132,8 +141,7 @@ struct ZL1_TOKEN* ZL1_lookahead(lexer_t* lex)
 
 #ifdef __TRACE_LEXER
     static int count = 1;
-    printf("__lex_lookahead( ... ) # %d -> ", count++);
-    __tok_print(*lex->next);
+    printf("ZL1_lookahead#%d( ... ) -> ...\n", count++);
 #endif
 
     return lex->next;
@@ -141,6 +149,9 @@ struct ZL1_TOKEN* ZL1_lookahead(lexer_t* lex)
 
 lexer_t* ZL1_create(char* src, char* filename)
 {
+#ifdef __TRACE_LEXER
+    printf("ZL1_create( ... )\n");
+#endif
     lexer_t* lex = (lexer_t*) ZL0_malloc(sizeof(lexer_t)); 
 
     lex->src = src; /* unsafe */

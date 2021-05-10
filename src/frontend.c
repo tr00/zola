@@ -1,6 +1,5 @@
 // Zola
 
-// #define __TRACE_LEXER
 // #define __TRACE_PARSER
 // #define __TRACE_EVAL
 
@@ -13,7 +12,7 @@
 #include "ZL0.h"
 #include "ZL1.h"
 #include "ZL2.h"
-#include "ZL3.h"
+// #include "ZL3.h"
 
 // types & structs
 
@@ -26,7 +25,6 @@ void __attribute__((__noreturn__)) ZL0_fatal(const char *msg)
 {
     // memory managing is done by the OS
     fprintf(stderr, "error: %s\n", msg);
-    fprintf(stderr, "   @ %s:%d\n", __FILE__, __LINE__);
     exit(-1);
 }
 
@@ -98,12 +96,25 @@ void debug_lexer(char *src)
     ZL1_free(lex);
 }
 
+void debug_parser(char *src)
+{
+    lexer_t* lex = ZL1_create(src, "<debug>");
+
+    struct ZL2_AST_EXPR* expr = ZL2_parse_expr(lex);
+
+    ZL2_print_expr(*expr);
+
+    free(expr);
+    ZL1_free(lex);
+}
+
 
 int main(int argc, char **argv)
 {
-    debug_lexer("def!(times_two (x :: i32) { <<(x i32) })");
+    //debug_lexer("def!(times_two (x :: i32) { <<(x i32) })");
     //lexer_t* lex = ZL1_create("(putc 65)", "<unknown>");
     
+    debug_parser("{ a; b; c; }");
     //ZL1_free(lex);
     return 0;
 }

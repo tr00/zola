@@ -3,7 +3,7 @@
 
 #include <stddef.h>
 
-#define ZL0_assert(cond, msg) if(!cond) ZL0_fatal(msg);
+#define ZL0_assert(cond, msg) if(!(cond)) ZL0_fatal((msg));
 
 /**
  *
