@@ -26,10 +26,13 @@ enum {
     ZL3_BUILTIN_XOR = 30012,
 
     ZL3_TYPE_I32 = 31000,
+    ZL3_TYPE_I64 = 31001,
 
     ZL3_NODE_EXPR = 32000,
     ZL3_NODE_CONSTANT = 32001,
     ZL3_NODE_BUILTIN = 32002,
+    ZL3_NODE_LAMBDA = 32002,
+    ZL3_NODE_MACRO = 32002,
 };
 
 /* structs */
@@ -46,6 +49,10 @@ struct ZL3_IR_EXPR {
     struct ZL3_IR_NODE* head;
 };
 
+struct ZL3_IR_LAMBDA {
+    
+};
+
 struct ZL3_IR_NODE {
     int tag;
     union {
@@ -56,9 +63,22 @@ struct ZL3_IR_NODE {
     struct ZL3_IR_NODE* next;
 };
 
+#define HASHSIZE 20
+
+struct ZL3_HASHMAP {
+    struct ZL3_HASHMAP* next;
+    char* name;
+    struct ZL3_IR_NODE* var;
+};
+
+struct ZL3_IR_CONTEXT {
+    struct ZL3_IR_CONTEXT* parent;
+    struct ZL3_HASHMAP *variables[HASHSIZE];
+};
+
 /* functions */
 struct ZL3_IR_NODE* ZL3_visit_node(struct ZL2_AST_NODE* node);
-struct ZL3_IR_NODE* ZL3_visit_atom(struct ZL2_AST_ATOM* atom);
+struct ZL3_IR_NODE* ZL3_visit_atom(struct ZL2_AST_ATOM*, struct ZL3_IR_CONTEXT*);
 struct ZL3_IR_NODE* ZL3_visit_expr(struct ZL2_AST_EXPR* expr);
 struct ZL3_IR_NODE* ZL3_visit_expr_builtin(struct ZL2_AST_EXPR* expr);
 

@@ -18,8 +18,92 @@
 #include "ZL2.h"
 #include "ZL0.h"
 
-struct ZL3_IR_NODE* ZL3_visit_atom(struct ZL2_AST_ATOM* atom)
+static int hash(char* s)
 {
+    unsigned val;
+    for(val = 0; *s != '\0'; s++)
+    {
+      val = *s + 31 * val;
+    }
+    return val % HASHSIZE;
+}
+
+struct ZL3_HASHMAP* lookup(struct ZL3_HASHMAP** map, char *s)
+{
+    struct ZL3_HASHMAP *np;
+    for(np = map[hash(s)]; np != NULL; np = np->next)
+    {
+        if(strcmp(s, np->name) == 0)
+        {
+            return np;
+        }
+    }
+    return NULL;
+}
+
+struct ZL3_HASHMAP* put(struct ZL3_HASHMAP** map, char* name, struct ZL3_IR_NODE* var)
+{
+    struct ZL3_HASHMAP* np;
+    unsigned val;
+    if((np = lookup(map, name)) == NULL)
+    {
+        np = ZL0_malloc(sizeof(struct ZL3_HASHMAP));
+        val = hash(name);
+        np->next = map[val];
+        map[val] = np;
+    }
+    else
+    {
+        free(np->var);
+    }
+    np->var = var;
+    return np;
+}
+
+static int isbuiltin(char* name)
+{
+    if(name == NULL) return 0;
+
+    else if(0 == strcmp(name, "__add__")) return ZL3_BUILTIN_ADD;
+    else if(0 == strcmp(name, "__sub__")) return ZL3_BUILTIN_SUB;
+    else if(0 == strcmp(name, "__mul__")) return ZL3_BUILTIN_MUL;
+    else if(0 == strcmp(name, "__udiv__")) return ZL3_BUILTIN_UDIV;
+    else if(0 == strcmp(name, "__sdiv__")) return ZL3_BUILTIN_SDIV;
+    else if(0 == strcmp(name, "__urem__")) return ZL3_BUILTIN_UREM;
+    else if(0 == strcmp(name, "__srem__")) return ZL3_BUILTIN_SREM;
+    else if(0 == strcmp(name, "__shl__")) return ZL3_BUILTIN_SHL;
+    else if(0 == strcmp(name, "__lshr__")) return ZL3_BUILTIN_LSHR;
+    else if(0 == strcmp(name, "__ashr__")) return ZL3_BUILTIN_ASHR;
+    else if(0 == strcmp(name, "__and__")) return ZL3_BUILTIN_AND;
+    else if(0 == strcmp(name, "__or__")) return ZL3_BUILTIN_OR;
+    else if(0 == strcmp(name, "__xor__")) return ZL3_BUILTIN_XOR;
+
+    return 0;
+}
+
+static struct ZL3_IR_NODE* variable_lookup(struct ZL3_IR_CONTEXT* ctx, char* name)
+{
+    struct ZL3_HASHMAP* np;
+    if((np = lookup(ctx->variables, name)) != NULL)
+    {
+        return np->var;
+    }
+    else if(ctx->parent)
+    {
+        return variable_lookup(ctx->parent, name);
+    }
+    else
+    {
+        return NULL;
+    }
+}
+
+struct ZL3_IR_NODE* ZL3_visit_atom(struct ZL2_AST_ATOM* atom, struct ZL3_IR_CONTEXT* ctx)
+{
+    /**
+     * builtin ?
+     * variable ?
+     */
     ZL0_assert(atom, "ZL3_visit_atom( NULL )");
 
     struct ZL3_IR_NODE* node = ZL0_malloc(sizeof(struct ZL3_IR_NODE));
@@ -39,43 +123,16 @@ struct ZL3_IR_NODE* ZL3_visit_atom(struct ZL2_AST_ATOM* atom)
 
         /* builtin */
         char* name = atom->val;
-
-        if(0 == strcmp(name, "add"))
+        int cmp;
+        if((cmp = isbuiltin(name)))
         {
             node->tag = ZL3_NODE_BUILTIN;
-            node->val.builtin.tag = ZL3_BUILTIN_ADD;
+            node->val.builtin.tag = cmp;
+            free(atom);
+            return node;
         }
-        else if(0 == strcmp(name, "sub"))
-        {
-            node->tag = ZL3_NODE_BUILTIN;
-            node->val.builtin.tag = ZL3_BUILTIN_SUB;
-        }
-        else if(0 == strcmp(name, "mul"))
-        {
-            node->tag = ZL3_NODE_BUILTIN;
-            node->val.builtin.tag = ZL3_BUILTIN_MUL;
-        }
-        else if(0 == strcmp(name, "udiv"))
-        {
-            node->tag = ZL3_NODE_BUILTIN;
-            node->val.builtin.tag = ZL3_BUILTIN_UDIV;
-        }
-        else if(0 == strcmp(name, "sdiv"))
-        {
-            node->tag = ZL3_NODE_BUILTIN;
-            node->val.builtin.tag = ZL3_BUILTIN_SDIV;
-        }
-        else if(0 == strcmp(name, "urem"))
-        {
-            node->tag = ZL3_NODE_BUILTIN;
-            node->val.builtin.tag = ZL3_BUILTIN_UREM;
-        }
-        else if(0 == strcmp(name, "srem"))
-        {
-            node->tag = ZL3_NODE_BUILTIN;
-            node->val.builtin.tag = ZL3_BUILTIN_SREM;
-        }
-
+        struct ZL3_IR_NODE* var = variable_lookup(ctx, name);
+        ZL0_assert(var, "undeclared variable");
         free(atom);
         return node;
     }
@@ -94,36 +151,25 @@ struct ZL3_IR_NODE* ZL3_visit_expr(struct ZL2_AST_EXPR* expr)
      * each expr has to get marked whether it is statically compilable
      */
 
-    struct ZL3_IR_NODE* node = ZL0_malloc(sizeof(struct ZL3_IR_NODE));
-    node->tag = ZL3_NODE_EXPR;
-
-    if(expr->head)
+    if(expr->tag == ZL2_EXPR_ATOM)
     {
-        struct ZL3_IR_NODE* head = node->val.expr.head = ZL3_visit_node(expr->head);
-        
-        if(head->tag == ZL3_NODE_BUILTIN)
-        {
 
-        }
-        // TODO:
     }
-    return node;
+    else if(expr->tag == ZL2_EXPR_LIST)
+    {
+
+    }
+    else if(expr->tag == ZL2_EXPR_CALL)
+    {
+
+    }
+
+
+    return NULL;
 }
 
-struct ZL3_IR_NODE* ZL3_visit_node(struct ZL2_AST_NODE* node)
+struct ZL3_IR_NODE* ZL3_visit_annotation()
 {
-    ZL0_assert(node, "ZL3_visit_node( NULL )");
-    if(node->tag == ZL2_NODE_ATOM)
-    {
-        return ZL3_visit_atom(node->val.atom);
-    }
-    else if(node->tag == ZL2_NODE_EXPR)
-    {
-        return ZL3_visit_expr(node->val.expr);
-    }
-    else
-    {
-        ZL0_fatal("ZL3_visit_node( corrupt )");
-    }
+    return NULL;
 }
 
