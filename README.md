@@ -2,14 +2,18 @@
 
 A simple high level language which is JIT-compiled to a custom VM. It focuses on producing efficient code for iterative algorithms.
 
-## Arrays
+## The Language
 
-## Vectors
+### Arrays
 
-## Iterators
+### Vectors
 
-## Generators
+### Iterators
 
-## Zen Optimization
+### Generators
+
+### Zen Optimization
 
 Zen Optimization uses previous iterations of loops to infer or assume information in order to optimize for upcoming iterations.
+
+## The Virtual Machine
