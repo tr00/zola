@@ -95,22 +95,11 @@ struct ZL3_IR_NODE {
     struct ZL3_IR_NODE* next;
 };
 
-#define HASHSIZE 20
-
-struct ZL3_HASHMAP {
-    struct ZL3_HASHMAP* next;
-    char* name;
-    struct ZL3_IR_NODE* var;
-};
-
-struct ZL3_IR_CONTEXT {
-    struct ZL3_IR_CONTEXT* parent;
-    struct ZL3_HASHMAP *variables[HASHSIZE];
+struct ZL_CONTEXT {
+    struct ZL_CONTEXT* parent;
 };
 
 /* functions */
-struct ZL3_IR_NODE* ZL3_visit_atom(struct ZL2_AST_ATOM*, struct ZL3_IR_CONTEXT*);
-struct ZL3_IR_NODE* ZL3_visit_expr(struct ZL2_AST_EXPR*, struct ZL3_IR_CONTEXT*);
-struct ZL3_IR_NODE* ZL3_visit_annotation(char*, struct ZL3_IR_NODE*, struct ZL3_IR_CONTEXT*);
+void visit_type(char*, struct AST_NODE*, struct ZL_CONTEXT*);
 
 #endif

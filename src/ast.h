@@ -6,6 +6,10 @@ enum {
     AST_NODE_CALL,
     AST_NODE_LITERAL,
     AST_NODE_SYMBOL,
+
+    AST_SYMBOL_VARIABLE,
+    AST_SYMBOL_BUILTIN,
+    AST_SYMBOL_LAMBDA,
 };
 
 struct AST_NODE;
@@ -22,7 +26,7 @@ struct AST_LIST {
  * 
  */
 struct AST_SYMBOL {
-    int tag;
+    int tag, flag;
     const char* val;
 };
 

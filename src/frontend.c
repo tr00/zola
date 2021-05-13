@@ -12,8 +12,8 @@
 #include "ZL0.h"
 
 #include "ast.h"
-#include "grammar.h"
-#include "ZL1.h"
+#include "parser.h"
+#include "scanner.h"
 
 // #include "ZL3.h"
 

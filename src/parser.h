@@ -1,13 +1,9 @@
-/**
- * The Parser and its utilities
- */
-#ifndef __ZL2_H_
-#define __ZL2_H_
+#ifndef __PARSER_H_
+#define __PARSER_H_
 
 #include "ast.h"
 
 typedef struct lexer_s lexer_t;
-
 
 struct AST_LITERAL* parse_literal(lexer_t* lex);
 struct AST_SYMBOL* parse_symbol(lexer_t* lex);

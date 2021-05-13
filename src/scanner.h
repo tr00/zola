@@ -1,5 +1,5 @@
-#ifndef __ZL1_H_
-#define __ZL1_H_
+#ifndef __SCANNER_H_
+#define __SCANNER_H_
 
 enum {
     ZL1_TOKEN_EOF = 10000,

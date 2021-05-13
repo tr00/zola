@@ -1,5 +1,5 @@
-#ifndef __ZL0_H_
-#define __ZL0_H_
+#ifndef __FRONTEND_H_
+#define __FRONTEND_H_
 
 #include <stddef.h>
 
@@ -23,6 +23,7 @@ void ZL0_trace(char *);
  *
  */
 void* ZL0_malloc(size_t);
+#define zlmalloc(size) ZL0_malloc(size);
 
 /**
  *
@@ -30,6 +31,7 @@ void* ZL0_malloc(size_t);
 char* ZL0_strncpy(char*, char*, size_t);
 
 char* ZL0_strdup(char*);
+#define zlstrdup(str) ZL0_strdup(str);
 
 #endif
 

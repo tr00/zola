@@ -2,11 +2,10 @@
 #include <stdlib.h>
 #include <stdio.h>
 
-#include "grammar.h"
 #include "ast.h"
 #include "types.h"
-
-#include "ZL1.h"
+#include "parser.h"
+#include "scanner.h"
 #include "ZL0.h"
 
 /**

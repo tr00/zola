@@ -6,7 +6,7 @@
 #include <ctype.h>
 
 #include "ZL0.h"
-#include "ZL1.h"
+#include "scanner.h"
 
 typedef struct lexer_s {
     size_t lineno;
