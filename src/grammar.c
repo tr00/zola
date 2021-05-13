@@ -2,6 +2,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 
+#include "grammar.h"
 #include "ast.h"
 #include "types.h"
 
@@ -57,7 +58,7 @@ struct AST_SYMBOL* parse_symbol(lexer_t* lex)
 struct AST_NODE* parse_statement(lexer_t* lex)
 {
     ZL0_assert(lex, "ZL2_parse_stmt( NULL )");
-    struct ZL2_AST_EXPR* expr = ZL2_parse_expr(lex);
+    struct AST_NODE* expr = parse_expr(lex);
 
     if(expr == NULL)
     {
@@ -94,7 +95,7 @@ struct AST_LIST* parse_list(lexer_t* lex)
             return head;
         }
 
-        head->node = ZL2_parse_stmt(lex);
+        head->node = parse_statement(lex);
         ZL0_assert(head->node, "expected statement or semicolon");
 
         tok = ZL1_lookahead(lex);
@@ -107,7 +108,7 @@ struct AST_LIST* parse_list(lexer_t* lex)
 
             struct AST_LIST* node = ZL0_malloc(sizeof(struct AST_LIST));
 
-            node->node = ZL2_parse_stmt(lex);
+            node->node = parse_statement(lex);
             ZL0_assert(node->node, "expected stamtement or closing brace");
 
             tail->next = node;
@@ -123,7 +124,7 @@ struct AST_LIST* parse_list(lexer_t* lex)
 }
 
 
-struct ZL2_AST_EXPR* ZL2_parse_expr(lexer_t* lex)
+struct AST_NODE* parse_expr(lexer_t* lex)
 {
     ZL0_assert(lex, "ZL2_parse_expr( NULL )");
     
@@ -144,7 +145,7 @@ struct ZL2_AST_EXPR* ZL2_parse_expr(lexer_t* lex)
     else if(ZL1_lookahead(lex)->tag == ZL1_TOKEN_LPAREN)
     {
         free(ZL1_consume(lex));
-        expr = ZL2_parse_expr(lex);
+        expr = parse_expr(lex);
         ZL0_assert(ZL1_lookahead(lex)->tag == ZL1_TOKEN_RPAREN, "expected closing parenthesis");
         free(ZL1_consume(lex));
     }
@@ -174,7 +175,7 @@ struct ZL2_AST_EXPR* ZL2_parse_expr(lexer_t* lex)
         {
             struct AST_LIST* head = ZL0_malloc(sizeof(struct AST_LIST));
             call->next = head;
-            head->node = ZL2_parse_expr(lex);
+            head->node = parse_expr(lex);
             ZL0_assert(head->node, "expected expression or closing parenthesis");
 
             struct AST_LIST* tail = head;
@@ -184,7 +185,7 @@ struct ZL2_AST_EXPR* ZL2_parse_expr(lexer_t* lex)
 
                 struct AST_LIST* node = ZL0_malloc(sizeof(struct AST_LIST));
 
-                node->node = ZL2_parse_expr(lex);
+                node->node = parse_expr(lex);
                 ZL0_assert(node->node, "expected expression or closing parenthesis");
 
                 tail->next = node;
@@ -205,30 +206,63 @@ struct ZL2_AST_EXPR* ZL2_parse_expr(lexer_t* lex)
 
     return expr;
 }
-/*
 
-void ZL2_print_atom(struct ZL2_AST_ATOM atom)
+static char* tabs(int tc)
 {
-    printf("atom[%d|%s]", atom.tag, atom.val ? atom.val : "NULL");
+    char *str = malloc(sizeof(char) * (tc + 1));
+    for(int i = 0; i < tc; i++)
+    {
+        str[i] = '\t';
+    }
+    str[tc] = '\0';
+    return str;
 }
 
-void ZL2_print_list(struct ZL2_AST_LIST list)
+static void print_list(struct AST_LIST* list, int tc)
 {
-    printf("list[");
-    while(list.expr)
+    while(list->node)
     {
-        printf("\n");
-        ZL2_print_expr(*list.expr);
-        if(list.next)
+        print_ast(list->node, tc);
+        if(list->next)
         {
-            list = *list.next;
+            list = list->next;
         }
         else
         {
             break;
         }
     }
-    printf("]\n");
+}
+
+
+void print_ast(struct AST_NODE* node, int tc)
+{
+    switch(node->tag)
+    {
+    case AST_NODE_CALL:
+    case AST_NODE_BLOCK:
+        printf("%sBLOCK[\n", tabs(tc));
+        tc++;
+        print_list(node->val.list, tc);
+        tc--;
+        printf("%s]\n", tabs(tc));
+        break;
+    case AST_NODE_LITERAL:
+        printf("%sINT[%s]\n", tabs(tc), node->val.literal->val);
+        break;
+    case AST_NODE_SYMBOL:
+        printf("%sSYMBOL[%s]\n", tabs(tc), node->val.symbol->val);
+        break;
+    default:
+        break;
+    }
+}
+
+/*
+
+void ZL2_print_atom(struct ZL2_AST_ATOM atom)
+{
+    printf("atom[%d|%s]", atom.tag, atom.val ? atom.val : "NULL");
 }
 
 void ZL2_print_expr(struct ZL2_AST_EXPR expr)

@@ -12,16 +12,10 @@
 #include "ZL0.h"
 
 #include "ast.h"
+#include "grammar.h"
 #include "ZL1.h"
 
 // #include "ZL3.h"
-
-// types & structs
-
-
-// globals
-
-// utils
 
 void __attribute__((__noreturn__)) ZL0_fatal(const char *msg)
 {
@@ -102,9 +96,9 @@ void debug_parser(char *src)
 {
     lexer_t* lex = ZL1_create(src, "<debug>");
 
-    struct AST_NODE* expr = ZL2_parse_expr(lex);
+    struct AST_NODE* expr = parse_expr(lex);
 
-    ZL2_print_expr(*expr);
+    print_ast(expr, 0);
     printf("\n");
 
     free(expr);
@@ -114,15 +108,15 @@ void debug_parser(char *src)
 
 int main(int argc, char **argv)
 {
-    //debug_lexer("def!(times_two (x :: i32) { <<(x i32) })");
-    lexer_t* lex = ZL1_create("__add__(1 2)", "<unknown>");
+    debug_parser("{ def!; 38239; f(); }");
+//    lexer_t* lex = ZL1_create("__add__(1 2)", "<unknown>");
     
-    struct ZL2_AST_EXPR* expr = ZL2_parse_expr(lex);
-    struct ZL3_IR_NODE* node = ZL3_visit_expr(expr, NULL);
+//    struct ZL2_AST_EXPR* expr = ZL2_parse_expr(lex);
+//    struct ZL3_IR_NODE* node = ZL3_visit_expr(expr, NULL);
 
-    codegen(node);    
+//    codegen(node);    
 
-    free(expr);
-    ZL1_free(lex);
+//    free(expr);
+//    ZL1_free(lex);
     return 0;
 }
