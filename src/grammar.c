@@ -2,7 +2,9 @@
 #include <stdlib.h>
 #include <stdio.h>
 
-#include "ZL2.h"
+#include "ast.h"
+#include "types.h"
+
 #include "ZL1.h"
 #include "ZL0.h"
 
@@ -23,44 +25,36 @@
  */
 ;
 
-struct ZL2_AST_ATOM* ZL2_parse_atom(lexer_t* lex)
-/* expr => clean */
-/* NULL => leaks */
+struct AST_LITERAL* parse_literal(lexer_t* lex)
 {
-    if(lex)
+    ZL0_assert(lex, "parse_literal( NULL )");
+    struct TOKEN* tok = ZL1_lookahead(lex);
+    if(tok->tag == ZL1_TOKEN_INTEGER)
     {
-        /* alloc: 000 */
-        /* maybe-alloc: 001 */
-        struct ZL1_TOKEN* tok = ZL1_lookahead(lex);
-
-        if(tok->tag == ZL1_TOKEN_INTEGER)
-        {
-            struct ZL2_AST_ATOM* atom = ZL0_malloc(sizeof(struct ZL2_AST_ATOM)); /* safe */
-            atom->tag = ZL2_ATOM_INTEGER;
-            atom->val = tok->val; /* recycle: 001 */
-
-            free(ZL1_consume(lex)); /* free: 000 */
-            return atom;
-        }
-        else if(tok->tag == ZL1_TOKEN_SYMBOL)
-        {
-            struct ZL2_AST_ATOM* atom = ZL0_malloc(sizeof(struct ZL2_AST_ATOM)); /* safe */
-            atom->tag = ZL2_ATOM_SYMBOL;
-            atom->val = tok->val; /* recycle: 001 */
-
-            free(ZL1_consume(lex)); /* free: 000 */
-            return atom;
-        }
-
-        /* leaking: 000 */
-        /* null: 001 */
-        return NULL;
+        struct AST_LITERAL* atom = ZL0_malloc(sizeof(struct AST_LITERAL));
+        atom->val = tok->val;
+        atom->type = TYPE_I64;
+        free(ZL1_consume(lex));
+        return atom;
     }
-
-    ZL0_fatal("ZL2_atom( NULL )");
+    return NULL;
 }
 
-struct ZL2_AST_EXPR* ZL2_parse_stmt(lexer_t* lex)
+struct AST_SYMBOL* parse_symbol(lexer_t* lex)
+{
+    ZL0_assert(lex, "parse_symbol( NULL )");
+    struct TOKEN* tok = ZL1_lookahead(lex);
+    if(tok->tag == ZL1_TOKEN_SYMBOL)
+    {
+        struct AST_SYMBOL* atom = ZL0_malloc(sizeof(struct AST_SYMBOL));
+        atom->val = tok->val;
+        free(ZL1_consume(lex));
+        return atom;
+    }
+    return NULL;
+}
+
+struct AST_NODE* parse_statement(lexer_t* lex)
 {
     ZL0_assert(lex, "ZL2_parse_stmt( NULL )");
     struct ZL2_AST_EXPR* expr = ZL2_parse_expr(lex);
@@ -77,7 +71,7 @@ struct ZL2_AST_EXPR* ZL2_parse_stmt(lexer_t* lex)
     }
 }
 
-struct ZL2_AST_LIST* ZL2_parse_list(lexer_t* lex)
+struct AST_LIST* parse_list(lexer_t* lex)
 {
     ZL0_assert(lex, "ZL2_parse_list( NULL )");
 
@@ -85,36 +79,36 @@ struct ZL2_AST_LIST* ZL2_parse_list(lexer_t* lex)
     printf("ZL2_parse_list( ... ) start\n");
 #endif
 
-    struct ZL1_TOKEN* tok = ZL1_lookahead(lex);
+    struct TOKEN* tok = ZL1_lookahead(lex);
 
     if(tok->tag == ZL1_TOKEN_LBRACE)
     {
         free(ZL1_consume(lex));
-        struct ZL2_AST_LIST* head = ZL0_malloc(sizeof(struct ZL2_AST_LIST));
+        struct AST_LIST* head = ZL0_malloc(sizeof(struct AST_LIST));
 
         tok = ZL1_lookahead(lex);
         if(tok->tag == ZL1_TOKEN_RBRACE)
         {
             free(ZL1_consume(lex));
-            head->expr = NULL;
+            head->node = NULL;
             return head;
         }
 
-        head->expr = ZL2_parse_stmt(lex);
-        ZL0_assert(head->expr, "expected statement or semicolon");
+        head->node = ZL2_parse_stmt(lex);
+        ZL0_assert(head->node, "expected statement or semicolon");
 
         tok = ZL1_lookahead(lex);
-        struct ZL2_AST_LIST* tail = head;
+        struct AST_LIST* tail = head;
 
         /* this section does one unnecessary malloc + free */
         while(tok->tag != ZL1_TOKEN_RBRACE)
         {
             ZL0_assert(tok->tag != ZL1_TOKEN_EOF, "unexpected end of file");
 
-            struct ZL2_AST_LIST* node = ZL0_malloc(sizeof(struct ZL2_AST_LIST));
+            struct AST_LIST* node = ZL0_malloc(sizeof(struct AST_LIST));
 
-            node->expr = ZL2_parse_stmt(lex);
-            ZL0_assert(node->expr, "expected stamtement or closing brace");
+            node->node = ZL2_parse_stmt(lex);
+            ZL0_assert(node->node, "expected stamtement or closing brace");
 
             tail->next = node;
             tail = node;
@@ -133,15 +127,19 @@ struct ZL2_AST_EXPR* ZL2_parse_expr(lexer_t* lex)
 {
     ZL0_assert(lex, "ZL2_parse_expr( NULL )");
     
-    struct ZL2_AST_EXPR* expr = ZL0_malloc(sizeof(struct ZL2_AST_EXPR));
+    struct AST_NODE* expr = ZL0_malloc(sizeof(struct AST_NODE));
 
-    if((expr->val.list = ZL2_parse_list(lex)) != NULL)
+    if((expr->val.list = parse_list(lex)) != NULL)
     {
-        expr->tag = ZL2_EXPR_LIST;
+        expr->tag = AST_NODE_BLOCK;
     }
-    else if((expr->val.atom = ZL2_parse_atom(lex)) != NULL)
+    else if((expr->val.symbol = parse_symbol(lex)) != NULL)
     {
-        expr->tag = ZL2_EXPR_ATOM;
+        expr->tag = AST_NODE_SYMBOL;
+    }
+    else if((expr->val.literal = parse_literal(lex)) != NULL)
+    {
+        expr->tag = AST_NODE_LITERAL;
     }
     else if(ZL1_lookahead(lex)->tag == ZL1_TOKEN_LPAREN)
     {
@@ -155,16 +153,16 @@ struct ZL2_AST_EXPR* ZL2_parse_expr(lexer_t* lex)
         return NULL;
     }
 
-    struct ZL1_TOKEN* tok = ZL1_lookahead(lex); 
+    struct TOKEN* tok = ZL1_lookahead(lex); 
     if(tok->tag == ZL1_TOKEN_LPAREN)
     {
         free(ZL1_consume(lex));
-        struct ZL2_AST_LIST* call = ZL0_malloc(sizeof(struct ZL2_AST_LIST));
-        call->expr = expr;
-        expr = ZL0_malloc(sizeof(struct ZL2_AST_EXPR));
+        struct AST_LIST* call = ZL0_malloc(sizeof(struct AST_LIST));
+        call->node = expr;
+        expr = ZL0_malloc(sizeof(struct AST_NODE));
         expr->val.list = call;
         expr->type = NULL;
-        expr->tag = ZL2_EXPR_CALL;
+        expr->tag = AST_NODE_CALL;
 
         tok = ZL1_lookahead(lex);
         if(tok->tag == ZL1_TOKEN_RPAREN)
@@ -174,20 +172,20 @@ struct ZL2_AST_EXPR* ZL2_parse_expr(lexer_t* lex)
         }
         else
         {
-            struct ZL2_AST_LIST* head = ZL0_malloc(sizeof(struct ZL2_AST_LIST));
+            struct AST_LIST* head = ZL0_malloc(sizeof(struct AST_LIST));
             call->next = head;
-            head->expr = ZL2_parse_expr(lex);
-            ZL0_assert(head->expr, "expected expression or closing parenthesis");
+            head->node = ZL2_parse_expr(lex);
+            ZL0_assert(head->node, "expected expression or closing parenthesis");
 
-            struct ZL2_AST_LIST* tail = head;
+            struct AST_LIST* tail = head;
             while((tok = ZL1_lookahead(lex))->tag != ZL1_TOKEN_RPAREN)
             {
                 ZL0_assert(tok->tag != ZL1_TOKEN_EOF, "unexpected end of file");
 
-                struct ZL2_AST_LIST* node = ZL0_malloc(sizeof(struct ZL2_AST_LIST));
+                struct AST_LIST* node = ZL0_malloc(sizeof(struct AST_LIST));
 
-                node->expr = ZL2_parse_expr(lex);
-                ZL0_assert(node->expr, "expected expression or closing parenthesis");
+                node->node = ZL2_parse_expr(lex);
+                ZL0_assert(node->node, "expected expression or closing parenthesis");
 
                 tail->next = node;
                 tail = node;
@@ -207,6 +205,7 @@ struct ZL2_AST_EXPR* ZL2_parse_expr(lexer_t* lex)
 
     return expr;
 }
+/*
 
 void ZL2_print_atom(struct ZL2_AST_ATOM atom)
 {
@@ -254,7 +253,7 @@ void ZL2_print_expr(struct ZL2_AST_EXPR expr)
         ZL2_print_list(*expr.val.list);
     }
 }
-
+*/
 
 
 

@@ -3,7 +3,11 @@
 
 #include <stddef.h>
 
+#ifndef NDEBUG
 #define ZL0_assert(cond, msg) if(!(cond)) ZL0_fatal((msg));
+#else
+#define ZL0_assert(cond, msg) ;
+#endif
 
 /**
  *

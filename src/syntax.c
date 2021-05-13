@@ -1,4 +1,5 @@
-// #define __TRACE_LEXER
+// ZL1
+
 
 #include <stdlib.h>
 #include <stdio.h>
@@ -21,7 +22,7 @@ typedef struct lexer_s {
  *      RBRACE ::= \}
  *      COLONS ::= \:\:
  *      INTEGER ::= \d+
- *      SYMBOL ::= [a-zA-Z0-9_]+
+ *      SYMBOL ::= [^\s]*
  *
  */
 
@@ -30,7 +31,7 @@ static int symbol_pattern(char c)
     return !(isspace(c) || c == '\0' ||  c == '(' || c == ')' || c == '{' || c == '}' || c == ':' || c == ';');
 }
 
-static void ZL1_next__(lexer_t* lex, struct ZL1_TOKEN* tok)
+static void ZL1_next__(lexer_t* lex, struct TOKEN* tok)
 {
     ZL0_assert(lex && tok, "ZL1_next__( NULL , NULL )");
     tok->tag = ZL1_TOKEN_EOF;
@@ -108,13 +109,13 @@ static void ZL1_next__(lexer_t* lex, struct ZL1_TOKEN* tok)
     }
 }
 
-struct ZL1_TOKEN* ZL1_consume(lexer_t* lex)
+struct TOKEN* ZL1_consume(lexer_t* lex)
 {
 
     if(lex)
     {
         struct ZL1_TOKEN* tok = lex->next; /* safe */
-        lex->next = ZL0_malloc(sizeof(struct ZL1_TOKEN));/* safe */
+        lex->next = ZL0_malloc(sizeof(struct TOKEN));/* safe */
         ZL1_next__(lex, lex->next);
 
 #ifdef __TRACE_LEXER
@@ -135,7 +136,7 @@ struct ZL1_TOKEN* ZL1_consume(lexer_t* lex)
     ZL0_fatal("ZL1_consume( NULL )");
 }
 
-struct ZL1_TOKEN* ZL1_lookahead(lexer_t* lex)
+struct TOKEN* ZL1_lookahead(lexer_t* lex)
 {
     ZL0_assert(lex, "ZL1_lookahead( NULL )");
 
@@ -158,7 +159,7 @@ lexer_t* ZL1_create(char* src, char* filename)
     lex->filename = filename; /* unsafe */
     lex->lineno = 1;
 
-    lex->next = ZL0_malloc(sizeof(struct ZL1_TOKEN)); 
+    lex->next = ZL0_malloc(sizeof(struct TOKEN)); 
     ZL1_next__(lex, lex->next);
 
     return lex;

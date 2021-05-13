@@ -10,8 +10,10 @@
 #include <string.h>
 
 #include "ZL0.h"
+
+#include "ast.h"
 #include "ZL1.h"
-#include "ZL2.h"
+
 // #include "ZL3.h"
 
 // types & structs
@@ -88,7 +90,7 @@ void debug_lexer(char *src)
 
     while(ZL1_lookahead(lex)->tag != ZL1_TOKEN_EOF)
     {
-        struct ZL1_TOKEN* tok = ZL1_consume(lex);
+        struct TOKEN* tok = ZL1_consume(lex);
         printf("[LEXER] >> %d\n", tok->tag);
         free(tok);
     }
@@ -100,7 +102,7 @@ void debug_parser(char *src)
 {
     lexer_t* lex = ZL1_create(src, "<debug>");
 
-    struct ZL2_AST_EXPR* expr = ZL2_parse_expr(lex);
+    struct AST_NODE* expr = ZL2_parse_expr(lex);
 
     ZL2_print_expr(*expr);
     printf("\n");
@@ -113,9 +115,14 @@ void debug_parser(char *src)
 int main(int argc, char **argv)
 {
     //debug_lexer("def!(times_two (x :: i32) { <<(x i32) })");
-    //lexer_t* lex = ZL1_create("(putc 65)", "<unknown>");
+    lexer_t* lex = ZL1_create("__add__(1 2)", "<unknown>");
     
-    debug_parser("{ f; }( and some args )");
-    //ZL1_free(lex);
+    struct ZL2_AST_EXPR* expr = ZL2_parse_expr(lex);
+    struct ZL3_IR_NODE* node = ZL3_visit_expr(expr, NULL);
+
+    codegen(node);    
+
+    free(expr);
+    ZL1_free(lex);
     return 0;
 }

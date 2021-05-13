@@ -13,7 +13,7 @@ enum {
     ZL1_TOKEN_SEMICOLON = 10008,
 };
 
-struct ZL1_TOKEN {
+struct TOKEN {
     int tag;
     char* val;
 };
@@ -21,8 +21,8 @@ struct ZL1_TOKEN {
 typedef struct lexer_s lexer_t; // TODO: convert to new style
 
 lexer_t* ZL1_create(char* src, char* filename);
-struct ZL1_TOKEN* ZL1_lookahead(lexer_t* lex);
-struct ZL1_TOKEN* ZL1_consume(lexer_t* lex);
+struct TOKEN* ZL1_lookahead(lexer_t* lex);
+struct TOKEN* ZL1_consume(lexer_t* lex);
 void ZL1_free(lexer_t* lex);
 
 #endif
