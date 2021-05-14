@@ -6,7 +6,7 @@
 #include "ast.h"
 #include "types.h"
 #include "builtins.h"
-#include "ZL0.h"
+#include "frontend.h"
 
 static int isbuiltin(char* name)
 {

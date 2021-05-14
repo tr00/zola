@@ -5,9 +5,8 @@
 
 typedef struct lexer_s lexer_t;
 
-struct AST_LITERAL* parse_literal(lexer_t* lex);
-struct AST_SYMBOL* parse_symbol(lexer_t* lex);
-struct AST_NODE* parse_statement(lexer_t* lex);
+struct AST_ATOM* parse_atom(lexer_t* lex);
+struct AST_NODE* parse_stmt(lexer_t* lex);
 struct AST_NODE* parse_list(lexer_t* lex);
 struct AST_NODE* parse_expr(lexer_t* lex);
 

@@ -2,9 +2,9 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-#include "ZL0.h"
-#include "ZL4.h"
+#include "frontend.h"
 #include "ast.h"
+#include "codegen.h"
 #include "builtins.h"
 #include "types.h"
 #include "semantics.h"
@@ -18,6 +18,19 @@ typedef struct block_s {
     unsigned int idx;
     FILE* out;
 } block_t;
+
+void codegen__add__(ref_t*, struct AST_NODE*, block_t*);
+void codegen__mul__(ref_t*, struct AST_NODE*, block_t*);
+void codegen__div__(ref_t*, struct AST_NODE*, block_t*);
+void codegen__udiv__(ref_t*, struct AST_NODE*, block_t*);
+void codegen__rem__(ref_t*, struct AST_NODE*, block_t*);
+void codegen__urem__(ref_t*, struct AST_NODE*, block_t*);
+void codegen__shl__(ref_t*, struct AST_NODE*, block_t*);
+void codegen__shr__(ref_t*, struct AST_NODE*, block_t*);
+void codegen__sar__(ref_t*, struct AST_NODE*, block_t*);
+void codegen__and__(ref_t*, struct AST_NODE*, block_t*);
+void codegen__xor__(ref_t*, struct AST_NODE*, block_t*);
+void codegen__or__(ref_t*, struct AST_NODE*, block_t*);
 
 static char iltype(const int type)
 {
@@ -37,7 +50,7 @@ static char iltype(const int type)
     return '\0';
 }
 
-void codegen_atom(ref_t* ref, struct AST_NODE* node, block_t* block)
+void codegen_atom(ref_t* ref, struct AST_ATOM* node, block_t* block)
 {
 
 }
@@ -50,7 +63,7 @@ void codegen_node(ref_t* ref, struct AST_NODE* node, block_t* block)
     }
     else if(node->tag == AST_NODE_BUILTIN)
     {
-        struct ZL3_IR_NODE* args = node->next;
+        struct AST_NODE* args = node->next;
         switch(node->val.atom->flag)
         {
             case __ADD__:
@@ -62,14 +75,14 @@ void codegen_node(ref_t* ref, struct AST_NODE* node, block_t* block)
     }
 }
 
-void codegen(struct ZL3_IR_NODE* node)
+void codegen(struct AST_NODE* node)
 {
     block_t* block = ZL0_malloc(sizeof(block_t));
 
     block->idx = 0;
     block->out = stdout;
 
-    ZL4_codegen_node(NULL, node, block);
+    codegen_node(NULL, node, block);
 
     free(block);
 }
@@ -78,11 +91,11 @@ void codegen__add__(ref_t* ref, struct AST_NODE* args, block_t* block)
 {
     /* __add__(op1 op2) */
 
-    ref_t *op1 = ZL0_malloc(sizeof(ref_t));
-    ref_t *op2 = ZL0_malloc(sizeof(ref_t));
+    ref_t *op1 = zlmalloc(sizeof(ref_t));
+    ref_t *op2 = zlmalloc(sizeof(ref_t));
 
-    ZL4_codegen_node(op1, args, block);
-    ZL4_codegen_node(op2, args->next, block);
+    codegen_node(op1, args, block);
+    codegen_node(op2, args->next, block);
 
     if(op1->type != op2->type)
     {

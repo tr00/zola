@@ -9,11 +9,11 @@
 #include <stdarg.h>
 #include <string.h>
 
-#include "ZL0.h"
-
+#include "frontend.h"
 #include "ast.h"
 #include "parser.h"
 #include "scanner.h"
+#include "semantics.h"
 
 // #include "ZL3.h"
 
@@ -108,15 +108,16 @@ void debug_parser(char *src)
 
 int main(int argc, char **argv)
 {
-    debug_parser("{ def!; 38239; f(); }");
-//    lexer_t* lex = ZL1_create("__add__(1 2)", "<unknown>");
+    //debug_parser("{ def!; 38239; f(); }");
+    lexer_t* lex = ZL1_create("__add__(1 2)", "<unknown>");
     
-//    struct ZL2_AST_EXPR* expr = ZL2_parse_expr(lex);
-//    struct ZL3_IR_NODE* node = ZL3_visit_expr(expr, NULL);
+    struct AST_NODE* node = parse_expr(lex);
+    visit_node(node, NULL);
 
-//    codegen(node);    
+    printf("codegen...\n");
+    codegen(node);    
 
-//    free(expr);
-//    ZL1_free(lex);
+    free(node);
+    ZL1_free(lex);
     return 0;
 }

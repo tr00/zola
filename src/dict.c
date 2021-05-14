@@ -5,7 +5,7 @@
 #include <stdlib.h>
 
 #include "ast.h"
-#include "ZL0.h"
+#include "frontend.h"
 
 #define HASHSIZE 20
 

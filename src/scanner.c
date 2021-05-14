@@ -12,7 +12,7 @@
 #include <stdio.h>
 #include <ctype.h>
 
-#include "ZL0.h"
+#include "frontend.h"
 #include "scanner.h"
 
 typedef struct lexer_s {

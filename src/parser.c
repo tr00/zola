@@ -6,12 +6,13 @@
 #include "types.h"
 #include "parser.h"
 #include "scanner.h"
-#include "ZL0.h"
+#include "frontend.h"
 
 /**
  * TODO:
  *  - better error messages
  *  - implement macros
+ *  - scan for memory leaks
  * 
  * grammar rules:
  *
@@ -45,7 +46,7 @@ struct AST_ATOM* parse_atom(lexer_t* lex)
     return NULL;
 }
 
-struct AST_NODE* parse_statement(lexer_t* lex)
+struct AST_NODE* parse_stmt(lexer_t* lex)
 {
     ZL0_assert(lex, "ZL2_parse_stmt( NULL )");
     struct AST_NODE* expr = parse_expr(lex);
@@ -75,7 +76,7 @@ struct AST_NODE* parse_list(lexer_t* lex)
     if(tok->tag == ZL1_TOKEN_LBRACE)
     {
         free(ZL1_consume(lex));
-        struct AST_NODE* head = ZL0_malloc(sizeof(struct AST_NODE));
+        struct AST_NODE* head = zlmalloc(sizeof(struct AST_NODE));
 
         tok = ZL1_lookahead(lex);
         if(tok->tag == ZL1_TOKEN_RBRACE)
@@ -84,7 +85,7 @@ struct AST_NODE* parse_list(lexer_t* lex)
             return head;
         }
 
-        head->val.node = parse_statement(lex);
+        head->val.node = parse_stmt(lex);
         ZL0_assert(head->val.node, "expected statement or semicolon");
 
         tok = ZL1_lookahead(lex);
@@ -97,7 +98,7 @@ struct AST_NODE* parse_list(lexer_t* lex)
 
             struct AST_NODE* node = ZL0_malloc(sizeof(struct AST_NODE));
 
-            node->val.node = parse_statement(lex);
+            node->val.node = parse_stmt(lex);
             ZL0_assert(node->val.node, "expected stamtement or closing brace");
 
             tail->next = node;
