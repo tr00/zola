@@ -2,6 +2,7 @@
 #include <stdlib.h>
 
 #include "ast.h"
+#include "types.h"
 #include "builtins.h"
 #include "ZL3.h"
 #include "ZL0.h"
@@ -27,20 +28,27 @@ static int isbuiltin(char* name)
     return 0;
 }
 
-void visit_literal(struct AST_LITERAL* _, struct ZL_CONTEXT* ctx)
+void visit_atom(struct AST_ATOM* atom, struct ZL_CONTEXT* ctx)
 {
-    // noop
-}
-
-void visit_symbol(struct AST_SYMBOL* symbol, struct ZL_CONTEXT* ctx)
-{
-    int cmp;
-    if(cmp = isbuiltin(symbol->val))
+    ZL0_assert(atom, "visit_atom( NULL )");
+    if(atom->tag == AST_ATOM_LITERAL)
     {
-        symbol->tag = AST_SYMBOL_BUILTIN;
-        symbol->flag = cmp;
+        atom->flag = TYPE_I64;
     }
-    // TODO: variable lookup
+    else if(atom->tag == AST_ATOM_VARIABLE)
+    {
+        int cmp;
+        if(cmp = isbuiltin(atom->val))
+        {
+            atom->tag == AST_ATOM_BUILTIN;
+            atom->flag = cmp; // which builtin
+        }
+        else
+        {
+            // variable lookup
+        }
+    }
+
 }
 
 /**
@@ -62,17 +70,18 @@ void ZL3_visit_args(struct AST_LIST* list, struct ZL_CONTEXT* ctx)
 /**
  * only call on head
  */
-void visit_list(struct AST_LIST* list, struct ZL_CONTEXT* ctx)
+void visit_block(struct AST_NODE* block, struct ZL_CONTEXT* ctx)
 {
-    ZL0_assert(list, "ZL3_visit_list( NULL )");
-    ZL0_assert(list->node, "ZL3_visit_list( corrupt )");
-    struct ZL2_AST_LIST* head = list;
+    ZL0_assert(block, "visit_block( NULL )");
+    ZL0_assert(block->val.node, "visit_block( corrupt )");
+    struct ZL2_AST_LIST* head = block;
 
     // { expr; } === expr
-    if(list->next == NULL)
+    if(block->next == NULL)
     {
-        return ZL3_visit_expr(list->node, ctx);
+        return visit_node(block->val.node, ctx);
     }
+    printf("[WARNING]: only partial semantical analysis");
     // struct AST_NODE* node = ZL0_malloc(sizeof(struct AST_NODE));
     // struct ZL_CONTEXT* local = ZL0_malloc(sizeof(struct ZL_CONTEXT));
     // local->parent = ctx;
@@ -88,34 +97,36 @@ void visit_node(struct AST_NODE* node, struct ZL_CONTEXT* ctx)
      */
     struct ZL3_IR_NODE* node = NULL;
 
-    if(node->tag == AST_NODE_LITERAL)
+    if(node->tag == AST_NODE_ATOM)
     {
-        visit_literal(node->val.literal, ctx);
-    }
-    else if(node->tag == AST_NODE_SYMBOL)
-    {
-        visit_symbol(node->val.symbol, ctx);
+        visit_atom(node->val.atom, ctx);
     }
     else if(node->tag == AST_NODE_BLOCK)
     {
-        ZL3_visit_list(node->val.list, ctx);
+        visit_block(node->val.node, ctx);
     }
-    else if(node->tag == AST_NODE_CALL) /* f(a b c) */
+    else if(node->tag == AST_NODE_CALL)
     {
-        node = ZL3_visit_expr(expr->val.list->expr, ctx);
-        if(node->tag == ZL3_NODE_LAMBDA)
+        struct AST_NODE* head = node->val.node;
+        visit_node(head, ctx);
+        if(node->tag == AST_NODE_LAMBDA)
         {
+            // (lambda (x) { x; })( params )
+            // (f() :: lambda_t)( params )
         }
-        else if(node->tag == ZL3_NODE_BUILTIN)
+        else if(node->tag == AST_NODE_ATOM)
         {
-            /* __builtin__(expr[a b c]) */
-            node->next = ZL3_visit_args(expr->val.list->next, ctx);
+            // f(params)
+        }
+        else if(node->tag == AST_NODE_BUILTIN)
+        {
+            // __builtin__(params)
         }
     }
 
     if(node->type)
     {
-        ZL3_visit_annotation(expr->type, node, ctx);
+        ZL3_visit_type(node->type, node, ctx);
     }
 
     return node;
