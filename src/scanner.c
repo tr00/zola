@@ -1,5 +1,12 @@
 // ZL1
 
+/**
+ * changes to be done:
+ *      better tracing
+ *      better error messages
+ *      unit testing
+ *      function renaming
+ */
 
 #include <stdlib.h>
 #include <stdio.h>
@@ -11,7 +18,7 @@
 typedef struct lexer_s {
     size_t lineno;
     char *filename, *src;
-    struct ZL1_TOKEN* next;
+    struct TOKEN* next;
 } lexer_t;
 
 /**
@@ -114,7 +121,7 @@ struct TOKEN* ZL1_consume(lexer_t* lex)
 
     if(lex)
     {
-        struct ZL1_TOKEN* tok = lex->next; /* safe */
+        struct TOKEN* tok = lex->next; /* safe */
         lex->next = ZL0_malloc(sizeof(struct TOKEN));/* safe */
         ZL1_next__(lex, lex->next);
 

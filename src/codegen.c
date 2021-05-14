@@ -4,7 +4,10 @@
 
 #include "ZL0.h"
 #include "ZL4.h"
-#include "ZL3.h"
+#include "ast.h"
+#include "builtins.h"
+#include "types.h"
+#include "semantics.h"
 
 typedef struct ref_s {
     unsigned char* name;
@@ -16,48 +19,42 @@ typedef struct block_s {
     FILE* out;
 } block_t;
 
-void ZL4_builtin_add(ref_t* ref, struct ZL3_IR_NODE* args, block_t* block);
-
 static char iltype(const int type)
 {
     switch(type)
     {
-        case ZL3_TYPE_U32:
-        case ZL3_TYPE_I32:
+        case TYPE_U32:
+        case TYPE_I32:
             return 'w';
-        case ZL3_TYPE_U64:
-        case ZL3_TYPE_I64:
+        case TYPE_U64:
+        case TYPE_I64:
             return 'l';
-        case ZL3_TYPE_F32:
+        case TYPE_F32:
             return 's';
-        case ZL3_TYPE_F64:
+        case TYPE_F64:
             return 'd';
     }
     return '\0';
 }
 
-
-void ZL4_codegen_node(ref_t* ref, struct ZL3_IR_NODE* node, block_t* block)
+void codegen_atom(ref_t* ref, struct AST_NODE* node, block_t* block)
 {
-    if(node->tag == ZL3_NODE_CONSTANT)
+
+}
+
+void codegen_node(ref_t* ref, struct AST_NODE* node, block_t* block)
+{
+    if(node->tag == AST_NODE_ATOM)
     {
-        if(ref)
-        {
-            ref->name = node->val.constant.val;
-            ref->type = iltype(node->val.constant.type);
-        }
-        else
-        {
-            // unused value ??
-        }
+        codegen_atom(ref, node->val.atom, block);
     }
-    else if(node->tag == ZL3_NODE_BUILTIN)
+    else if(node->tag == AST_NODE_BUILTIN)
     {
         struct ZL3_IR_NODE* args = node->next;
-        switch(node->val.builtin.tag)
+        switch(node->val.atom->flag)
         {
-            case ZL3_BUILTIN_ADD:
-                ZL4_builtin_add(ref, args, block);
+            case __ADD__:
+                codegen__add__(ref, args, block);
                 break;
         } 
         // args have to get free'd by the builtin
@@ -77,7 +74,7 @@ void codegen(struct ZL3_IR_NODE* node)
     free(block);
 }
 
-void ZL4_builtin_add(ref_t* ref, struct ZL3_IR_NODE* args, block_t* block)
+void codegen__add__(ref_t* ref, struct AST_NODE* args, block_t* block)
 {
     /* __add__(op1 op2) */
 

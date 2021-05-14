@@ -22,7 +22,7 @@ enum {
     __CULEL__, __CULEW__,
     __CSLTL__, __CSLTW__,
     __CULTL__, __CULTW__,
-    __CSGEL__, __CSGEL__,
+    __CSGEL__, __CSGEW__,
     __CUGEL__, __CUGEW__,
     __CSGTL__, __CSGTW__,
     __CUGTL__, __CUGTW__,
@@ -44,6 +44,6 @@ enum {
 
     __COPY__, __CAST__,
 
-}
+};
 
 #endif

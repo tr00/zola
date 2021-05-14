@@ -19,7 +19,7 @@ enum {
  */
 struct AST_ATOM {
     int tag, flag;
-    const char* val;
+    char* val;
 };
 
 /**
@@ -31,7 +31,7 @@ struct AST_NODE {
         struct AST_ATOM* atom;
         struct AST_NODE* node;
     } val;
-    const char* type;
+    char* type;
     struct AST_NODE* next;
 };
 

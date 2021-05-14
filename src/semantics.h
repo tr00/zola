@@ -1,13 +1,16 @@
 /**
  * AST to IR compiler 
  */
-#ifndef __ZL3_H_
-#define __ZL3_H_
+#ifndef __SEMANTICS_H_
+#define __SEMANTICS_H_
+
+struct AST_NODE;
 
 struct ZL_CONTEXT {
     struct ZL_CONTEXT* parent;
 };
 
+void visit_node(struct AST_NODE*, struct ZL_CONTEXT*);
 void visit_type(char*, struct AST_NODE*, struct ZL_CONTEXT*);
 
 #endif

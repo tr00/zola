@@ -2,6 +2,7 @@
  * implementation of a simple hashmap which is used for all sorts of variable lookup
  */
 #include <string.h>
+#include <stdlib.h>
 
 #include "ast.h"
 #include "ZL0.h"

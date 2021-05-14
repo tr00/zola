@@ -9,6 +9,10 @@
 #include "ZL0.h"
 
 /**
+ * TODO:
+ *  - better error messages
+ *  - implement macros
+ * 
  * grammar rules:
  *
  *      atom ::= SYMBOL
@@ -58,7 +62,7 @@ struct AST_NODE* parse_statement(lexer_t* lex)
     }
 }
 
-struct AST_LIST* parse_list(lexer_t* lex)
+struct AST_NODE* parse_list(lexer_t* lex)
 {
     ZL0_assert(lex, "parse_list( NULL )");
 

@@ -1,10 +1,11 @@
 #include <string.h>
 #include <stdlib.h>
+#include <stdio.h>
 
+#include "semantics.h"
 #include "ast.h"
 #include "types.h"
 #include "builtins.h"
-#include "ZL3.h"
 #include "ZL0.h"
 
 static int isbuiltin(char* name)
@@ -38,9 +39,9 @@ void visit_atom(struct AST_ATOM* atom, struct ZL_CONTEXT* ctx)
     else if(atom->tag == AST_ATOM_VARIABLE)
     {
         int cmp;
-        if(cmp = isbuiltin(atom->val))
+        if((cmp = isbuiltin(atom->val)))
         {
-            atom->tag == AST_ATOM_BUILTIN;
+            atom->tag = AST_ATOM_BUILTIN;
             atom->flag = cmp; // which builtin
         }
         else
@@ -54,16 +55,12 @@ void visit_atom(struct AST_ATOM* atom, struct ZL_CONTEXT* ctx)
 /**
  * visits each element individualy and links them together
  */
-void ZL3_visit_args(struct AST_LIST* list, struct ZL_CONTEXT* ctx)
+void visit_args(struct AST_NODE* args, struct ZL_CONTEXT* ctx)
 {
-    struct AST_NODE* node = ZL3_visit_expr(list->node, ctx);
-    list = list->next;
-
-    while(list)
+    while(args)
     {
-        node->next = ZL3_visit_expr(list->node, ctx);
-        node = node->next;
-        list = list->next;
+        visit_node(args->val.node, ctx);
+        args = args->next;
     }
 }
 
@@ -74,7 +71,7 @@ void visit_block(struct AST_NODE* block, struct ZL_CONTEXT* ctx)
 {
     ZL0_assert(block, "visit_block( NULL )");
     ZL0_assert(block->val.node, "visit_block( corrupt )");
-    struct ZL2_AST_LIST* head = block;
+    struct AST_NODE* head = block;
 
     // { expr; } === expr
     if(block->next == NULL)
@@ -86,16 +83,12 @@ void visit_block(struct AST_NODE* block, struct ZL_CONTEXT* ctx)
     // struct ZL_CONTEXT* local = ZL0_malloc(sizeof(struct ZL_CONTEXT));
     // local->parent = ctx;
     // TODO: 
+    // always inline this
 }
 
 void visit_node(struct AST_NODE* node, struct ZL_CONTEXT* ctx)
 {
     ZL0_assert(node, "ZL3_visit_expr( NULL )");
-    /**
-     *
-     * each expr has to get marked whether it is statically compilable
-     */
-    struct ZL3_IR_NODE* node = NULL;
 
     if(node->tag == AST_NODE_ATOM)
     {
@@ -109,31 +102,40 @@ void visit_node(struct AST_NODE* node, struct ZL_CONTEXT* ctx)
     {
         struct AST_NODE* head = node->val.node;
         visit_node(head, ctx);
-        if(node->tag == AST_NODE_LAMBDA)
+        visit_args(node->next, ctx);
+        if(head->tag == AST_NODE_LAMBDA)
         {
-            // (lambda (x) { x; })( params )
-            // (f() :: lambda_t)( params )
+            // (lambda (x) { x; })( params ) => always inline
+            if(1) // is actual lambda
+            {
+                // largs = head->val.next
+                // lbody = head->val.next->next->val.node
+                // beta-reduction
+                // linked list insert
+            }
+            // (f() :: lambda_t)( params ) => cant inline
         }
-        else if(node->tag == AST_NODE_ATOM)
+        else if(head->tag == AST_NODE_ATOM)
         {
-            // f(params)
+            // f(params) => maybe inline
         }
-        else if(node->tag == AST_NODE_BUILTIN)
+        else if(head->tag == AST_NODE_BUILTIN)
         {
-            // __builtin__(params)
+            // __builtin__(params) => automatically inlines
         }
     }
 
     if(node->type)
     {
-        ZL3_visit_type(node->type, node, ctx);
+        visit_type(node->type, node, ctx);
     }
 
-    return node;
 }
 
 void visit_type(char* type, struct AST_NODE* node, struct ZL_CONTEXT* ctx)
 {
-
-    return node;
+    if(!strcmp(type, node->type))
+    {
+        // throw error 
+    }
 }
