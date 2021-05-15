@@ -24,32 +24,47 @@
  *      stmt ::= expr SEMICOLON
  *
  *
- *      f()
- *      { f; }()
- *      (g())()
+ *      ()              == nil
+ *      ( ex1 )         == ex1
+ * 
+ *      { }             == nil
+ *      { ex1; }        == ex1
+ *      { ex1; ex2; }   == cons(ex1 cons(ex2 nil) [block]) [block]
+ * 
+ *      f()             == cons(f nil) [call]
+ *      { f; }()        == cons(f nil) [call]
+ *      (g())()         == cons(cons(g nil) [call] nil) [call]
  */
 ;
 
-struct AST_ATOM* parse_atom(lexer_t* lex)
+struct SEXPR* parse_atom(lexer_t* lex)
 {
     ZL0_assert(lex, "parse_atom( NULL )");
     struct TOKEN* tok = ZL1_lookahead(lex);
-    if(tok->tag == ZL1_TOKEN_INTEGER || tok->tag == ZL1_TOKEN_SYMBOL)
+    if(tok->tag == ZL1_TOKEN_INTEGER)
     {
-        struct AST_ATOM* atom = ZL0_malloc(sizeof(struct AST_ATOM));
-        atom->val = tok->val;
-        atom->tag = tok->tag == ZL1_TOKEN_SYMBOL ? AST_ATOM_VARIABLE : AST_ATOM_LITERAL;
+        struct SEXPR* sexpr = zlmalloc(sizeof(struct SEXPR));
+        sexpr->atom = tok->val;
+        sexpr->flag = AST_FLAG_ATOM | AST_FLAG_NUMBER;
         // atom->type == TYPE_I64
         free(ZL1_consume(lex));
-        return atom;
+        return sexpr;
+    }
+    else if(tok->tag == ZL1_TOKEN_SYMBOL)
+    {
+        struct SEXPR* sexpr = zlmalloc(sizeof(struct SEXPR));
+        sexpr->atom = tok->val;
+        sexpr->flag = AST_FLAG_ATOM | AST_FLAG_SYMBOL;
+        free(ZL1_consume(lex));
+        return sexpr;
     }
     return NULL;
 }
 
-struct AST_NODE* parse_stmt(lexer_t* lex)
+struct SEXPR* parse_stmt(lexer_t* lex)
 {
     ZL0_assert(lex, "ZL2_parse_stmt( NULL )");
-    struct AST_NODE* expr = parse_expr(lex);
+    struct SEXPR* expr = parse_expr(lex);
 
     if(expr == NULL)
     {
@@ -63,7 +78,7 @@ struct AST_NODE* parse_stmt(lexer_t* lex)
     }
 }
 
-struct AST_NODE* parse_list(lexer_t* lex)
+struct SEXPR* parse_list(lexer_t* lex)
 {
     ZL0_assert(lex, "parse_list( NULL )");
 
@@ -73,60 +88,54 @@ struct AST_NODE* parse_list(lexer_t* lex)
 
     struct TOKEN* tok = ZL1_lookahead(lex);
 
-    if(tok->tag == ZL1_TOKEN_LBRACE)
+    if(tok->tag != ZL1_TOKEN_LBRACE)
+        return NULL;
+    
+    free(ZL1_consume(lex));
+
+    struct SEXPR* head = zlmalloc(sizeof(struct SEXPR));
+    tok = ZL1_lookahead(lex);
+    if(tok->tag == ZL1_TOKEN_RBRACE)
     {
         free(ZL1_consume(lex));
-        struct AST_NODE* head = zlmalloc(sizeof(struct AST_NODE));
-
-        tok = ZL1_lookahead(lex);
-        if(tok->tag == ZL1_TOKEN_RBRACE)
-        {
-            free(ZL1_consume(lex));
-            return head;
-        }
-
-        head->val.node = parse_stmt(lex);
-        ZL0_assert(head->val.node, "expected statement or semicolon");
-
-        tok = ZL1_lookahead(lex);
-        struct AST_NODE* tail = head;
-
-        /* this section does one unnecessary malloc + free */
-        while(tok->tag != ZL1_TOKEN_RBRACE)
-        {
-            ZL0_assert(tok->tag != ZL1_TOKEN_EOF, "unexpected end of file");
-
-            struct AST_NODE* node = ZL0_malloc(sizeof(struct AST_NODE));
-
-            node->val.node = parse_stmt(lex);
-            ZL0_assert(node->val.node, "expected stamtement or closing brace");
-
-            tail->next = node;
-            tail = node;
-            tok = ZL1_lookahead(lex);
-        }
-
-        free(ZL1_consume(lex));
-        return head;
+        head->flag = AST_FLAG_NIL;
+        return head; // return nil
     }
 
-    return NULL;
+    head->car = parse_stmt(lex);
+    ZL0_assert(head->car, "expected statement or semicolon");
+
+    tok = ZL1_lookahead(lex);
+    struct SEXPR* tail = head;
+
+    /* this section does one unnecessary malloc + free */
+    while(tok->tag != ZL1_TOKEN_RBRACE)
+    {
+        ZL0_assert(tok->tag != ZL1_TOKEN_EOF, "unexpected end of file");
+
+        struct SEXPR* node = ZL0_malloc(sizeof(struct SEXPR));
+
+        node->car = parse_stmt(lex);
+        ZL0_assert(node->car, "expected statement or closing brace");
+
+        tail->cdr = node;
+        tail = node;
+        tok = ZL1_lookahead(lex);
+    }
+
+    free(ZL1_consume(lex));
+    return head;
 }
 
 
-struct AST_NODE* parse_expr(lexer_t* lex)
+struct SEXPR* parse_expr(lexer_t* lex)
 {
     ZL0_assert(lex, "ZL2_parse_expr( NULL )");
     
-    struct AST_NODE* expr = ZL0_malloc(sizeof(struct AST_NODE));
+    struct SEXPR* expr;
 
-    if((expr->val.node = parse_list(lex)) != NULL)
+    if((expr = parse_list(lex)) != NULL)
     {
-        expr->tag = AST_NODE_BLOCK;
-    }
-    else if((expr->val.atom = parse_atom(lex)) != NULL)
-    {
-        expr->tag = AST_NODE_ATOM;
     }
     else if(ZL1_lookahead(lex)->tag == ZL1_TOKEN_LPAREN)
     {
@@ -137,45 +146,49 @@ struct AST_NODE* parse_expr(lexer_t* lex)
     }
     else
     {
-        return NULL;
+        // cons(atom ())
+        struct SEXPR* atom = parse_atom(lex);
+        
+        if(atom == NULL)
+            return NULL;
+
+        expr = zlmalloc(sizeof(struct SEXPR));
+        expr->atom = atom;
+        expr->flag = atom->flag;
     }
 
     struct TOKEN* tok = ZL1_lookahead(lex); 
     if(tok->tag == ZL1_TOKEN_LPAREN)
     {
         free(ZL1_consume(lex));
-        struct AST_NODE* call = ZL0_malloc(sizeof(struct AST_NODE));
-        call->val.node = expr;
-        expr = ZL0_malloc(sizeof(struct AST_NODE));
-        expr->val.node = call;
-        expr->type = NULL;
-        expr->tag = AST_NODE_CALL;
+        expr->type = NULL; // correct ?
+        expr->flag |= AST_FLAG_CALL;
 
         tok = ZL1_lookahead(lex);
         if(tok->tag == ZL1_TOKEN_RPAREN)
         {
             free(ZL1_consume(lex));
-            call->next = NULL;
+            expr->cdr = zlmalloc(sizeof(struct SEXPR));
+            expr->cdr->flag = AST_FLAG_NIL;
         }
         else
         {
-            struct AST_NODE* head = ZL0_malloc(sizeof(struct AST_NODE));
-            call->next = head;
-            head->val.node = parse_expr(lex);
-            ZL0_assert(head->val.node, "expected expression or closing parenthesis");
+            struct SEXPR* tail = zlmalloc(sizeof(struct SEXPR));
+            expr->cdr = tail; // cons(f ...)
+            tail->car = parse_expr(lex);
+            ZL0_assert(tail->car, "expected expression or closing parenthesis");
 
-            struct AST_NODE* tail = head;
             while((tok = ZL1_lookahead(lex))->tag != ZL1_TOKEN_RPAREN)
             {
                 ZL0_assert(tok->tag != ZL1_TOKEN_EOF, "unexpected end of file");
 
-                struct AST_NODE* node = ZL0_malloc(sizeof(struct AST_NODE));
+                struct SEXPR* next = zlmalloc(sizeof(struct SEXPR));
 
-                node->val.node = parse_expr(lex);
-                ZL0_assert(node->val.node, "expected expression or closing parenthesis");
+                next->car = parse_expr(lex);
+                ZL0_assert(next->car, "expected expression or closing parenthesis");
 
-                tail->next = node;
-                tail = node;
+                tail->cdr = next;
+                tail = next;
             }
             free(ZL1_consume(lex));
         }
@@ -187,38 +200,7 @@ struct AST_NODE* parse_expr(lexer_t* lex)
         ZL0_assert(ZL1_lookahead(lex)->tag == ZL1_TOKEN_SYMBOL, "expected type symbol");
         expr->type = ZL1_lookahead(lex)->val;
         free(ZL1_consume(lex));
-        
     }
 
     return expr;
-}
-
-static char* tabs(int tc)
-{
-    char *str = malloc(sizeof(char) * (tc + 1));
-    for(int i = 0; i < tc; i++)
-    {
-        str[i] = '\t';
-    }
-    str[tc] = '\0';
-    return str;
-}
-
-
-void print_ast(struct AST_NODE* node, int tc)
-{
-    switch(node->tag)
-    {
-    case AST_NODE_CALL:
-        printf("call\n");
-        break;
-    case AST_NODE_BLOCK:
-        printf("block\n");
-        break;
-    case AST_NODE_ATOM:
-        printf("atom\n");
-        break;
-    default:
-        break;
-    }
 }

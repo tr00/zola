@@ -11,6 +11,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <ctype.h>
+#include <string.h>
 
 #include "frontend.h"
 #include "scanner.h"
@@ -33,9 +34,10 @@ typedef struct lexer_s {
  *
  */
 
-static int symbol_pattern(char c)
+static int issymbol(char c)
 {
-    return !(isspace(c) || c == '\0' ||  c == '(' || c == ')' || c == '{' || c == '}' || c == ':' || c == ';');
+    static const char* viable = "~!?./,<>_+=-:$%%^&\\[]";
+    return isalnum(c) || strchr(viable, c);
 }
 
 static void ZL1_next__(lexer_t* lex, struct TOKEN* tok)
@@ -100,10 +102,10 @@ static void ZL1_next__(lexer_t* lex, struct TOKEN* tok)
         tok->tag = ZL1_TOKEN_RBRACE;
         lex->src++;
     }
-    else if(symbol_pattern(c))
+    else if(issymbol(c))
     {
         size_t len = 1;
-        while(symbol_pattern(*(lex->src + len)))
+        while(issymbol(*(lex->src + len)))
         {
             len++;
         }

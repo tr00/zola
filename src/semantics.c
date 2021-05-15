@@ -8,6 +8,12 @@
 #include "builtins.h"
 #include "frontend.h"
 
+/**
+ * TODO:
+ *  - complete builtin list
+ *  - inline functions
+ */
+
 static int isbuiltin(char* name)
 {
     if(name == NULL) return 0;
@@ -29,20 +35,41 @@ static int isbuiltin(char* name)
     return 0;
 }
 
-void visit_atom(struct AST_ATOM* atom, struct ZL_CONTEXT* ctx)
+void analyze(struct SEXPR* sexpr)
+{
+    const unsigned flag = sexpr->flag;
+
+    struct ZL_CONTEXT* ctx = NULL; // TODO: implement dispatcher
+    if(flag & AST_FLAG_ATOM)
+    {
+        visit_atom(sexpr, ctx);
+    }
+    else if(flag & AST_FLAG_CALL)
+    {
+        visit_call(sexpr, ctx);
+    }
+    else if(flag & AST_FLAG_LIST)
+    {
+        visit_list(sexpr, ctx);
+    }
+}
+
+void visit_atom(struct SEXPR* atom, struct ZL_CONTEXT* ctx)
 {
     ZL0_assert(atom, "visit_atom( NULL )");
-    if(atom->tag == AST_ATOM_LITERAL)
+    ZL0_assert(atom->flag & AST_FLAG_ATOM, "visit_atom( non-atom )");
+
+    if(atom->flag & AST_FLAG_NUMBER)
     {
-        atom->flag = TYPE_I64;
+        // type = i64
     }
-    else if(atom->tag == AST_ATOM_VARIABLE)
+    else if(atom->flag & AST_FLAG_SYMBOL)
     {
         int cmp;
-        if((cmp = isbuiltin(atom->val)))
+        if((cmp = isbuiltin(atom->atom)))
         {
-            atom->tag = AST_ATOM_BUILTIN;
-            atom->flag = cmp; // which builtin
+            // atom->tag = AST_ATOM_BUILTIN;
+            // atom->flag = cmp; // which builtin
         }
         else
         {
@@ -52,33 +79,31 @@ void visit_atom(struct AST_ATOM* atom, struct ZL_CONTEXT* ctx)
 
 }
 
-/**
- * visits each element individualy and links them together
- */
-void visit_args(struct AST_NODE* args, struct ZL_CONTEXT* ctx)
+void visit_call(struct SEXPR* args, struct ZL_CONTEXT* ctx)
 {
+    // TODO: analyze head & maybe inline
     while(args)
     {
-        visit_node(args->val.node, ctx);
-        args = args->next;
+        visit_node(args->car, ctx);
+        args = args->cdr;
     }
 }
 
 /**
  * only call on head
  */
-void visit_block(struct AST_NODE* block, struct ZL_CONTEXT* ctx)
+void visit_list(struct SEXPR* block, struct ZL_CONTEXT* ctx)
 {
     ZL0_assert(block, "visit_block( NULL )");
-    ZL0_assert(block->val.node, "visit_block( corrupt )");
+    ZL0_assert(block->car, "visit_block( corrupt )");
     struct AST_NODE* head = block;
 
     // { expr; } === expr
-    if(block->next == NULL)
+    if(block->cdr == NULL)
     {
-        return visit_node(block->val.node, ctx);
+        return visit_node(block->car, ctx);
     }
-    printf("[WARNING]: only partial semantical analysis");
+    printf("[WARNING]: only partial semantical analysis\n");
     // struct AST_NODE* node = ZL0_malloc(sizeof(struct AST_NODE));
     // struct ZL_CONTEXT* local = ZL0_malloc(sizeof(struct ZL_CONTEXT));
     // local->parent = ctx;
@@ -86,53 +111,7 @@ void visit_block(struct AST_NODE* block, struct ZL_CONTEXT* ctx)
     // always inline this
 }
 
-void visit_node(struct AST_NODE* node, struct ZL_CONTEXT* ctx)
-{
-    ZL0_assert(node, "ZL3_visit_expr( NULL )");
-
-    if(node->tag == AST_NODE_ATOM)
-    {
-        visit_atom(node->val.atom, ctx);
-    }
-    else if(node->tag == AST_NODE_BLOCK)
-    {
-        visit_block(node->val.node, ctx);
-    }
-    else if(node->tag == AST_NODE_CALL)
-    {
-        struct AST_NODE* head = node->val.node;
-        visit_node(head, ctx);
-        visit_args(node->next, ctx);
-        if(head->tag == AST_NODE_LAMBDA)
-        {
-            // (lambda (x) { x; })( params ) => always inline
-            if(1) // is actual lambda
-            {
-                // largs = head->val.next
-                // lbody = head->val.next->next->val.node
-                // beta-reduction
-                // linked list insert
-            }
-            // (f() :: lambda_t)( params ) => cant inline
-        }
-        else if(head->tag == AST_NODE_ATOM)
-        {
-            // f(params) => maybe inline
-        }
-        else if(head->tag == AST_NODE_BUILTIN)
-        {
-            // __builtin__(params) => automatically inlines
-        }
-    }
-
-    if(node->type)
-    {
-        visit_type(node->type, node, ctx);
-    }
-
-}
-
-void visit_type(char* type, struct AST_NODE* node, struct ZL_CONTEXT* ctx)
+void assert_type(char* type, struct SEXPR* node, struct ZL_CONTEXT* ctx)
 {
     if(!strcmp(type, node->type))
     {

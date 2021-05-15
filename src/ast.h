@@ -2,37 +2,31 @@
 #define __AST_H_
 
 enum {
-    AST_NODE_BLOCK,
-    AST_NODE_CALL,
-    AST_NODE_ATOM,
-    AST_NODE_LAMBDA,
-    AST_NODE_BUILTIN,
-
-    AST_ATOM_VARIABLE,
-    AST_ATOM_BUILTIN,
-    AST_ATOM_LAMBDA,
-    AST_ATOM_LITERAL,
+    AST_FLAG_ATOM = 0x1,
+    AST_FLAG_CONS = 0x2,
+    AST_FLAG_LIST = 0x4,
+    AST_FLAG_CALL = 0x8,
+    AST_FLAG_BUILTIN = 0x10,
+    AST_FLAG_LAMBDA = 0x20,
+    AST_FLAG_MACRO = 0x40,
+    AST_FLAG_NUMBER = 0x80,
+    AST_FLAG_SYMBOL = 0x100,
+    AST_FLAG_NIL = 0x200,
 };
 
 /**
  * 
  */
-struct AST_ATOM {
-    int tag, flag;
-    char* val;
-};
-
-/**
- * 
- */
-struct AST_NODE {
-    int tag;
+struct SEXPR {
+    unsigned flag; // atom / node // block / call / literal / symbol ...
     union {
-        struct AST_ATOM* atom;
-        struct AST_NODE* node;
-    } val;
-    char* type;
-    struct AST_NODE* next;
+        struct { char* atom; };
+        struct {
+            struct SEXPR* car;
+            struct SEXPR* cdr;
+        };
+    };
+    char* type; // sexpr :: type
 };
 
 #endif

@@ -4,13 +4,14 @@
 #ifndef __SEMANTICS_H_
 #define __SEMANTICS_H_
 
-struct AST_NODE;
-
 struct ZL_CONTEXT {
     struct ZL_CONTEXT* parent;
 };
 
-void visit_node(struct AST_NODE*, struct ZL_CONTEXT*);
-void visit_type(char*, struct AST_NODE*, struct ZL_CONTEXT*);
+void analyze(struct SEXPR*);
+void visit_list(struct SEXPR*, struct ZL_CONTEXT*);
+void visit_call(struct SEXPR*, struct ZL_CONTEXT*);
+void visit_atom(struct SEXPR*, struct ZL_CONTEXT*);
+void assert_type(char*, struct SEXPR*, struct ZL_CONTEXT*);
 
 #endif
