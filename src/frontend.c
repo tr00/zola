@@ -105,7 +105,7 @@ void debug_parser(char *src)
 {
     lexer_t* lex = ZL1_create(src, "<debug>");
 
-    struct AST_NODE* expr = parse_expr(lex);
+    struct SEXPR* expr = parse_expr(lex);
 
     printf("\n");
 
@@ -121,7 +121,7 @@ static inline void ptabs(int c)
 
 static void dump_ast(struct SEXPR* node)
 {
-    if(node->flag == AST_FLAG_ATOM)
+    if(node->flag & AST_FLAG_ATOM)
     {
         printf("%s ", node->atom);
     }
@@ -147,6 +147,7 @@ static void dump_ast(struct SEXPR* node)
  * TODO:
  *  - DO NOT edit the ast
  *  - inspect parser
+ *  - implement dispatcher
  *  - finish simple codegen
  *  - add error messages
  *  - add macros
@@ -157,8 +158,8 @@ int main(int argc, char **argv)
     //debug_parser("{ def!; 38239; f(); }");
     lexer_t* lex = ZL1_create("{ __add__(1 2); __sub__(3 1); }", "<unknown>");
     
-    struct AST_NODE* node = parse_expr(lex);
-    visit_node(node, NULL);
+    struct SEXPR* node = parse_expr(lex);
+    // visit_node(node, NULL);
 
     dump_ast(node);
     // printf("codegen...\n");

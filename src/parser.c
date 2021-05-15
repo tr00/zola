@@ -146,15 +146,11 @@ struct SEXPR* parse_expr(lexer_t* lex)
     }
     else
     {
-        // cons(atom ())
-        struct SEXPR* atom = parse_atom(lex);
+        // atom
+        expr = parse_atom(lex);
         
-        if(atom == NULL)
+        if(expr == NULL)
             return NULL;
-
-        expr = zlmalloc(sizeof(struct SEXPR));
-        expr->atom = atom;
-        expr->flag = atom->flag;
     }
 
     struct TOKEN* tok = ZL1_lookahead(lex); 

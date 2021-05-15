@@ -37,9 +37,14 @@ static int isbuiltin(char* name)
 
 void analyze(struct SEXPR* sexpr)
 {
+    struct ZL_CONTEXT* ctx = NULL; // TODO: implement dispatcher
+    visit_node(sexpr, ctx);
+}
+
+void visit_node(struct SEXPR* sexpr, struct ZL_CONTEXT* ctx)
+{
     const unsigned flag = sexpr->flag;
 
-    struct ZL_CONTEXT* ctx = NULL; // TODO: implement dispatcher
     if(flag & AST_FLAG_ATOM)
     {
         visit_atom(sexpr, ctx);
@@ -96,12 +101,12 @@ void visit_list(struct SEXPR* block, struct ZL_CONTEXT* ctx)
 {
     ZL0_assert(block, "visit_block( NULL )");
     ZL0_assert(block->car, "visit_block( corrupt )");
-    struct AST_NODE* head = block;
+    struct SEXPR* head = block;
 
     // { expr; } === expr
     if(block->cdr == NULL)
     {
-        return visit_node(block->car, ctx);
+        visit_node(block->car, ctx);
     }
     printf("[WARNING]: only partial semantical analysis\n");
     // struct AST_NODE* node = ZL0_malloc(sizeof(struct AST_NODE));
