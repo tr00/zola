@@ -14,3 +14,6 @@ all: $(OBJ)
 
 $(OBJDIR)/%.o: $(SRCDIR)/%.c
 	$(CC) $(CFLAGS) -c $< -o $@
+
+clean:
+	rm -rf obj/
