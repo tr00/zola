@@ -19,6 +19,7 @@ enum {
  */
 struct SEXPR {
     unsigned flag; // atom / node // block / call / literal / symbol ...
+    char* type; // sexpr :: type
     union {
         struct { char* atom; };
         struct {
@@ -26,7 +27,8 @@ struct SEXPR {
             struct SEXPR* cdr;
         };
     };
-    char* type; // sexpr :: type
 };
+
+extern const struct SEXPR nil;
 
 #endif

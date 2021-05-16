@@ -8,7 +8,7 @@
 #endif
 #define zlfatal(msg) zlcrash(msg, __FILE__, __LINE__);
 
-void __attribute__((__noreturn__)) zlcrash(const char*, const char*, int);
-void __attribute__((__noreturn__)) zlerror(const char*, const char*, int);
+void __attribute__((noreturn, noinline)) zlcrash(const char*, const char*, int);
+void __attribute__((noreturn, noinline)) zlerror(const char*, void*);
 
 #endif

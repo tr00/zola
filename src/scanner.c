@@ -1,5 +1,3 @@
-// ZL1
-
 /**
  * changes to be done:
  *      better tracing
@@ -15,6 +13,7 @@
 
 #include "frontend.h"
 #include "scanner.h"
+#include "errors.h"
 
 typedef struct lexer_s {
     size_t lineno;
@@ -42,7 +41,7 @@ static int issymbol(char c)
 
 static void ZL1_next__(lexer_t* lex, struct TOKEN* tok)
 {
-    ZL0_assert(lex && tok, "ZL1_next__( NULL , NULL )");
+    zlassert(lex && tok, "ZL1_next__( NULL , NULL )");
     tok->tag = ZL1_TOKEN_EOF;
     // skip spaces
     while(*lex->src != '\0' && isspace(*lex->src))
@@ -64,8 +63,8 @@ static void ZL1_next__(lexer_t* lex, struct TOKEN* tok)
             len++;
         }
         tok->tag = ZL1_TOKEN_INTEGER;
-        tok->val = (char*) ZL0_malloc(sizeof(char) * (len + 1));
-        ZL0_strncpy(tok->val, lex->src, len + 1);
+        tok->val = zlmalloc(sizeof(char) * (len + 1));
+        zlstrncpy(tok->val, lex->src, len + 1);
 
         lex->src += len;
     }
@@ -110,44 +109,28 @@ static void ZL1_next__(lexer_t* lex, struct TOKEN* tok)
             len++;
         }
         tok->tag = ZL1_TOKEN_SYMBOL;
-        tok->val = (char*) ZL0_malloc(sizeof(char) * (len + 1));
+        tok->val = zlmalloc(sizeof(char) * (len + 1));
 
-        ZL0_strncpy(tok->val, lex->src, len + 1);
+        zlstrncpy(tok->val, lex->src, len + 1);
 
         lex->src += len;
     }
 }
 
-struct TOKEN* ZL1_consume(lexer_t* lex)
+void consume(lexer_t* lex)
 {
-
-    if(lex)
-    {
-        struct TOKEN* tok = lex->next; /* safe */
-        lex->next = ZL0_malloc(sizeof(struct TOKEN));/* safe */
-        ZL1_next__(lex, lex->next);
+    zlassert(lex, "consume( NULL )");
+    free(lex->next); // should be always assigned
+    lex->next = zlmalloc(sizeof(struct TOKEN));/* safe */
+    ZL1_next__(lex, lex->next);
 
 #ifdef __TRACE_LEXER
-        static int count = 1;
-        if(tok)
-        {
-            printf("ZL1_consume#%d( ... ) -> ...\n", count);
-        }
-        else
-        {
-            printf("ZL1_consume#%d( ... ) -> NULL\n", count);
-        }
-        count++;
 #endif
-
-        return tok;
-    }
-    ZL0_fatal("ZL1_consume( NULL )");
 }
 
-struct TOKEN* ZL1_lookahead(lexer_t* lex)
+struct TOKEN* __attribute__((always_inline)) lookahead(lexer_t* lex)
 {
-    ZL0_assert(lex, "ZL1_lookahead( NULL )");
+    zlassert(lex, "ZL1_lookahead( NULL )");
 
 #ifdef __TRACE_LEXER
     static int count = 1;
@@ -157,18 +140,29 @@ struct TOKEN* ZL1_lookahead(lexer_t* lex)
     return lex->next;
 }
 
+int predict(int token, lexer_t* lex)
+{
+    if(lex->next->tag == token)
+    {
+        free(lex->next);
+        ZL1_next__(lex, (lex->next = zlmalloc(sizeof(struct TOKEN))));
+        return success;
+    }
+    return failure;
+}
+
 lexer_t* ZL1_create(char* src, char* filename)
 {
 #ifdef __TRACE_LEXER
     printf("ZL1_create( ... )\n");
 #endif
-    lexer_t* lex = (lexer_t*) ZL0_malloc(sizeof(lexer_t)); 
+    lexer_t* lex = zlmalloc(sizeof(lexer_t)); 
 
     lex->src = src; /* unsafe */
     lex->filename = filename; /* unsafe */
     lex->lineno = 1;
 
-    lex->next = ZL0_malloc(sizeof(struct TOKEN)); 
+    lex->next = zlmalloc(sizeof(struct TOKEN));
     ZL1_next__(lex, lex->next);
 
     return lex;
@@ -179,13 +173,8 @@ void ZL1_free(lexer_t* lex)
 #ifdef __TRACE_LEXER
     printf("ZL1_free( ... )\n");
 #endif
-    if(lex)
-    {
-        if(lex->next)
-        {
-            free(lex->next);
-        }
-        free(lex);
-    }
+    zlassert(lex, "ZL1_free( NULL )");
+    free(lex->next);
+    free(lex);
 }
 

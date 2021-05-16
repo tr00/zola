@@ -8,6 +8,7 @@
 #include "builtins.h"
 #include "types.h"
 #include "semantics.h"
+#include "errors.h"
 
 typedef struct ref_s {
     unsigned char* name;
@@ -19,18 +20,18 @@ typedef struct block_s {
     FILE* out;
 } block_t;
 
-void codegen__add__(ref_t*, struct AST_NODE*, block_t*);
-void codegen__mul__(ref_t*, struct AST_NODE*, block_t*);
-void codegen__div__(ref_t*, struct AST_NODE*, block_t*);
-void codegen__udiv__(ref_t*, struct AST_NODE*, block_t*);
-void codegen__rem__(ref_t*, struct AST_NODE*, block_t*);
-void codegen__urem__(ref_t*, struct AST_NODE*, block_t*);
-void codegen__shl__(ref_t*, struct AST_NODE*, block_t*);
-void codegen__shr__(ref_t*, struct AST_NODE*, block_t*);
-void codegen__sar__(ref_t*, struct AST_NODE*, block_t*);
-void codegen__and__(ref_t*, struct AST_NODE*, block_t*);
-void codegen__xor__(ref_t*, struct AST_NODE*, block_t*);
-void codegen__or__(ref_t*, struct AST_NODE*, block_t*);
+void codegen__add__(ref_t*, struct SEXPR*, block_t*);
+void codegen__mul__(ref_t*, struct SEXPR*, block_t*);
+void codegen__div__(ref_t*, struct SEXPR*, block_t*);
+void codegen__udiv__(ref_t*, struct SEXPR*, block_t*);
+void codegen__rem__(ref_t*, struct SEXPR*, block_t*);
+void codegen__urem__(ref_t*, struct SEXPR*, block_t*);
+void codegen__shl__(ref_t*, struct SEXPR*, block_t*);
+void codegen__shr__(ref_t*, struct SEXPR*, block_t*);
+void codegen__sar__(ref_t*, struct SEXPR*, block_t*);
+void codegen__and__(ref_t*, struct SEXPR*, block_t*);
+void codegen__xor__(ref_t*, struct SEXPR*, block_t*);
+void codegen__or__(ref_t*, struct SEXPR*, block_t*);
 
 static char iltype(const int type)
 {
@@ -50,44 +51,48 @@ static char iltype(const int type)
     return '\0';
 }
 
-void codegen_atom(ref_t* ref, struct AST_ATOM* node, block_t* block)
+void codegen_atom(ref_t* ref, struct SEXPR* node, block_t* block)
 {
 
 }
 
-void codegen_node(ref_t* ref, struct AST_NODE* node, block_t* block)
+void codegen_node(ref_t* ref, struct SEXPR* node, block_t* block)
 {
-    if(node->tag == AST_NODE_ATOM)
+    if(node->flag & AST_FLAG_ATOM)
     {
-        codegen_atom(ref, node->val.atom, block);
+        codegen_atom(ref, node, block);
     }
-    else if(node->tag == AST_NODE_BUILTIN)
+    else if(node->flag & AST_FLAG_CALL)
     {
-        struct AST_NODE* args = node->next;
-        switch(node->val.atom->flag)
+        struct SEXPR* args = node->cdr;
+        if(node->flag & AST_FLAG_BUILTIN)
         {
-            case __ADD__:
-                codegen__add__(ref, args, block);
-                break;
-        } 
-        // args have to get free'd by the builtin
-        free(node);
+        }
+        else if(node->flag & AST_FLAG_SYMBOL)
+        {
+
+        }
+        else
+        {
+            zlfatal("i dunno what to do here");
+        }
     }
+    free(node);
 }
 
-void codegen(struct AST_NODE* node)
+void codegen(struct SEXPR* node)
 {
-    block_t* block = ZL0_malloc(sizeof(block_t));
+    block_t* block = zlmalloc(sizeof(block_t));
 
     block->idx = 0;
     block->out = stdout;
 
     codegen_node(NULL, node, block);
 
-    free(block);
+    free(block); // ?!
 }
 
-void codegen__add__(ref_t* ref, struct AST_NODE* args, block_t* block)
+void codegen__add__(ref_t* ref, struct SEXPR* args, block_t* block)
 {
     /* __add__(op1 op2) */
 
@@ -95,11 +100,11 @@ void codegen__add__(ref_t* ref, struct AST_NODE* args, block_t* block)
     ref_t *op2 = zlmalloc(sizeof(ref_t));
 
     codegen_node(op1, args, block);
-    codegen_node(op2, args->next, block);
+    codegen_node(op2, args->cdr, block);
 
     if(op1->type != op2->type)
     {
-        ZL0_fatal("type mismatch");
+        zlerror("type mismatch", NULL);
     }
 
     if(ref)

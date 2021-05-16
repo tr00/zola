@@ -1,8 +1,8 @@
 #ifndef __codegen_H_
 #define __codegen_H_
 
-struct AST_NODE;
+struct SEXPR;
 
-void codegen(struct AST_NODE* node);
+void codegen(struct SEXPR* node);
 
 #endif 

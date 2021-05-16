@@ -7,11 +7,13 @@
 #include "types.h"
 #include "builtins.h"
 #include "frontend.h"
+#include "errors.h"
 
 /**
  * TODO:
  *  - complete builtin list
  *  - inline functions
+ *  - this file is way smaller than it should be!
  */
 
 static int isbuiltin(char* name)
@@ -61,8 +63,8 @@ void visit_node(struct SEXPR* sexpr, struct ZL_CONTEXT* ctx)
 
 void visit_atom(struct SEXPR* atom, struct ZL_CONTEXT* ctx)
 {
-    ZL0_assert(atom, "visit_atom( NULL )");
-    ZL0_assert(atom->flag & AST_FLAG_ATOM, "visit_atom( non-atom )");
+    zlassert(atom, "visit_atom( NULL )");
+    zlassert(atom->flag & AST_FLAG_ATOM, "visit_atom( non-atom )");
 
     if(atom->flag & AST_FLAG_NUMBER)
     {
@@ -99,8 +101,8 @@ void visit_call(struct SEXPR* args, struct ZL_CONTEXT* ctx)
  */
 void visit_list(struct SEXPR* block, struct ZL_CONTEXT* ctx)
 {
-    ZL0_assert(block, "visit_block( NULL )");
-    ZL0_assert(block->car, "visit_block( corrupt )");
+    zlassert(block, "visit_block( NULL )");
+    zlassert(block->car, "visit_block( corrupt )");
     struct SEXPR* head = block;
 
     // { expr; } === expr
@@ -116,10 +118,10 @@ void visit_list(struct SEXPR* block, struct ZL_CONTEXT* ctx)
     // always inline this
 }
 
-void assert_type(char* type, struct SEXPR* node, struct ZL_CONTEXT* ctx)
+inline void assert_type(char* type, struct SEXPR* node, struct ZL_CONTEXT* ctx)
 {
     if(!strcmp(type, node->type))
     {
-        // throw error 
+        zlerror("type assertion failed", NULL);
     }
 }
