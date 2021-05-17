@@ -37,7 +37,7 @@ void __attribute__((noreturn, noinline)) zlcrash(const char *msg, const char* fi
 
 void __attribute__((noreturn, noinline)) zlerror(const char* msg, void* pos)
 {
-    fprintf(stderr, "unimlpemented error\n");
+    fprintf(stderr, "syntax error: %s\n", msg);
     exit(-1);
 }
 
@@ -117,32 +117,34 @@ static void dump_ast(struct SEXPR* node)
 {
     if(node->flag & AST_FLAG_ATOM)
     {
+        // printf("atom: %p\n", node);
         printf("%s ", node->atom);
     }
-    else
+    else if(node->flag & AST_FLAG_CONS)
     {
-        // printf("%p\n", node->car);
-        // printf("%p\n", node->cdr);
         printf("cons(");
-        dump_ast(node->car);
-        if(node->cdr)
+        if(node->car)
         {
-            dump_ast(node->cdr);
+            dump_ast(node->car);
         }
+        if(node->cdr)
+            dump_ast(node->cdr);
         else
         {
             printf("()");
         }
         printf(")");
-        // printf("%d[\n", node->tag);
     }
-
+    else
+    {
+        // printf("flag: %d", node->flag);
+        printf("nil ");
+    }
 }
 
 /**
  * TODO:
  *  - DO NOT edit the ast
- *  - inspect parser
  *  - implement dispatcher
  *  - finish simple codegen
  *  - add error messages
@@ -152,13 +154,14 @@ static void dump_ast(struct SEXPR* node)
 int main(int argc, char **argv)
 {
     //debug_parser("{ def!; 38239; f(); }");
-    lexer_t* lex = ZL1_create("__add__(1 2)", "<unknown>");
+    lexer_t* lex = ZL1_create("f( () 443)", "<unknown>");
     
     struct SEXPR* node = zlmalloc(sizeof(struct SEXPR));
     parse_expr(node, lex);
     // visit_node(node, NULL);
 
     dump_ast(node);
+    printf("\n");
     // printf("codegen...\n");
     // codegen(node);    
 

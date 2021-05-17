@@ -1,6 +1,8 @@
 #ifndef __DISPATCHER_H_
 #define __DISPATCHER_H_
 
+struct SEXPR;
+
 enum {
     VAR_FLAG_CALLABLE = 0x1,
     VAR_FLAG_INLINE = 0x2,
@@ -17,18 +19,11 @@ struct VARIABLE {
     const char* type; // lambda_t in case of a function
 };
 
-struct FHEAD {
-    // name
-    // body
-    // arg count
-    // arg types
-    // inline flag
-    // c-function flag
-};
-
-struct FBODY {
-    struct SEXPR* ptr;    
-};
+struct CALLABLE {
+    int unique;
+    const char* rtype;
+    const char** argt;
+} CALLABLE;
 
 void dispatch();
 

@@ -1,6 +1,8 @@
 #define __TRACE_CODEGEN
 #include <stdio.h>
 #include <stdlib.h>
+#include <stdio.h>
+#include <string.h>
 
 #include "frontend.h"
 #include "ast.h"
@@ -20,18 +22,11 @@ typedef struct block_s {
     FILE* out;
 } block_t;
 
-void codegen__add__(ref_t*, struct SEXPR*, block_t*);
-void codegen__mul__(ref_t*, struct SEXPR*, block_t*);
-void codegen__div__(ref_t*, struct SEXPR*, block_t*);
-void codegen__udiv__(ref_t*, struct SEXPR*, block_t*);
-void codegen__rem__(ref_t*, struct SEXPR*, block_t*);
-void codegen__urem__(ref_t*, struct SEXPR*, block_t*);
-void codegen__shl__(ref_t*, struct SEXPR*, block_t*);
-void codegen__shr__(ref_t*, struct SEXPR*, block_t*);
-void codegen__sar__(ref_t*, struct SEXPR*, block_t*);
-void codegen__and__(ref_t*, struct SEXPR*, block_t*);
-void codegen__xor__(ref_t*, struct SEXPR*, block_t*);
-void codegen__or__(ref_t*, struct SEXPR*, block_t*);
+static void __attribute__((always_inline)) newtmp(char* buffer, block_t* block) {
+    sprintf(buffer, "%%%d", block->idx++);
+}
+
+void codegen__addl__(char*, struct SEXPR*, block_t*);
 
 static char iltype(const int type)
 {
@@ -92,32 +87,20 @@ void codegen(struct SEXPR* node)
     free(block); // ?!
 }
 
-void codegen__add__(ref_t* ref, struct SEXPR* args, block_t* block)
-{
-    /* __add__(op1 op2) */
+/**
+ * the following functions all assume:
+ *      - the parameter types match
+ *      - there are only two parameters
+ */
 
-    ref_t *op1 = zlmalloc(sizeof(ref_t));
-    ref_t *op2 = zlmalloc(sizeof(ref_t));
-
-    codegen_node(op1, args, block);
-    codegen_node(op2, args->cdr, block);
-
-    if(op1->type != op2->type)
-    {
-        zlerror("type mismatch", NULL);
+#define BINOP(instr, type) \
+    void codegen__ ## instr ## type ## __(char* buf, struct SEXPR* args, block_t* block) \
+    { \
+        char *op1, *op2; \
+        codegen_node(op1, args, block); \
+        codegen_node(op2, args->cdr, block); \
+        newtmp(buf, block); \ 
+        fprintf(block->out, "    %%%d =%s %s %s, %s", buf, #type, #instr, op1, op2); \
     }
 
-    if(ref)
-    {
-        // ref->name = itoa(block->idx);
-        ref->type = op1->type;
-    }
-
-    /*    %2 =l add %0, %1 */
-    fprintf(block->out, "\t%%%d =%c add %s, %s\n", block->idx++, op1->type, op1->name, op2->name);
-
-    free(op1->name);
-    free(op2->name);
-    free(op1);
-    free(op2);
-}
+BINOP(add, l)

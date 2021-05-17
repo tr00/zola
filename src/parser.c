@@ -1,4 +1,5 @@
 
+#include <string.h>
 #include <stdlib.h>
 #include <stdio.h>
 
@@ -8,8 +9,6 @@
 #include "scanner.h"
 #include "frontend.h"
 #include "errors.h"
-
-const struct SEXPR nil = { .flag = 0 };
 
 /**
  * TODO:
@@ -84,10 +83,7 @@ int parse_list(struct SEXPR* list, lexer_t* lex)
         return failure;
 
     if(predict(ZL1_TOKEN_RBRACE, lex) == success)
-    {
-        *list = nil;
-        return success;
-    }
+        return success; // nil
 
     if(parse_stmt(list->car, lex))
         zlerror("expected statement or semicolon", NULL);
@@ -102,7 +98,7 @@ int parse_list(struct SEXPR* list, lexer_t* lex)
         struct SEXPR* node = zlmalloc(sizeof(struct SEXPR));
         node->car = zlmalloc(sizeof(struct SEXPR));
 
-        if(parse_stmt(node->car, lex));
+        if(parse_stmt(node->car, lex))
             zlerror("expected statement or closing brace", NULL);
 
         tail->cdr = node;
@@ -118,13 +114,16 @@ int parse_expr(struct SEXPR* expr, lexer_t* lex)
     
     if(predict(ZL1_TOKEN_LPAREN, lex) == success)
     {
+        if(predict(ZL1_TOKEN_RPAREN, lex) == success)
+            return success; // nil
+
         if(parse_expr(expr, lex) == failure)
             zlerror("expected expression", NULL);
 
         if(predict(ZL1_TOKEN_RPAREN, lex) == failure)
             zlerror("expected closing parenthesis", NULL);
 
-        consume(lex);
+        // consume(lex);
     }
     else if(parse_atom(expr, lex) && parse_list(expr, lex))
     {
@@ -133,17 +132,15 @@ int parse_expr(struct SEXPR* expr, lexer_t* lex)
 
     if(predict(ZL1_TOKEN_LPAREN, lex) == success)
     {
-        struct SEXPR* func = expr;
-        expr = zlmalloc(sizeof(struct SEXPR));
+        struct SEXPR* func = zlmalloc(sizeof(struct SEXPR));
+        memcpy(func, expr, sizeof(struct SEXPR));
         expr->car = func;
-        
         expr->type = NULL; // case: f :: i32 ();
         expr->flag = AST_FLAG_CONS | AST_FLAG_CALL;
 
-        if(predict(ZL1_TOKEN_RPAREN, lex) == success)
+        if(predict(ZL1_TOKEN_RPAREN, lex) == success) // nil
         {
-            expr->cdr = zlmalloc(sizeof(struct SEXPR));
-            expr->cdr->flag = AST_FLAG_NIL;
+
         }
         else
         {
@@ -152,17 +149,20 @@ int parse_expr(struct SEXPR* expr, lexer_t* lex)
 
             tail->car = zlmalloc(sizeof(struct SEXPR));
 
+            tail->flag = AST_FLAG_CONS;
+
             if(parse_expr(tail->car, lex) == failure)
                 zlerror("expected expression or closing parenthesis", NULL);
-
-            struct TOKEN* tok;
-            while(predict(ZL1_TOKEN_RPAREN, lex) == failure)
+            
+            while(predict(ZL1_TOKEN_RPAREN, lex))
             {
-                if(predict(ZL1_TOKEN_EOF, lex))
+                printf("coggers!\n");
+                if(predict(ZL1_TOKEN_EOF, lex) == success)
                     zlerror("unexpected end of file", NULL);
 
                 struct SEXPR* next = zlmalloc(sizeof(struct SEXPR));
                 next->car = zlmalloc(sizeof(struct SEXPR));
+                next->flag = AST_FLAG_CONS;
 
                 if(parse_expr(next->car, lex) == failure)
                     zlerror("expected expression or closing parenthesis", NULL);
