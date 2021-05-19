@@ -100,7 +100,11 @@ void codegen(struct SEXPR* node)
         codegen_node(op1, args, block); \
         codegen_node(op2, args->cdr, block); \
         newtmp(buf, block); \ 
-        fprintf(block->out, "    %%%d =%s %s %s, %s", buf, #type, #instr, op1, op2); \
+        fprintf(block->out, "\t%s =%s %s %s, %s\n", buf, #type, #instr, op1, op2); \
     }
 
 BINOP(add, l)
+BINOP(add, w)
+
+BINOP(sub, l)
+BINOP(sub, w)

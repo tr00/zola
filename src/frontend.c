@@ -117,28 +117,19 @@ static void dump_ast(struct SEXPR* node)
 {
     if(node->flag & AST_FLAG_ATOM)
     {
-        // printf("atom: %p\n", node);
-        printf("%s ", node->atom);
+        printf("%s", node->atom);
     }
     else if(node->flag & AST_FLAG_CONS)
     {
         printf("cons(");
-        if(node->car)
-        {
-            dump_ast(node->car);
-        }
-        if(node->cdr)
-            dump_ast(node->cdr);
-        else
-        {
-            printf("()");
-        }
+        dump_ast(node->car);
+        printf(" ");
+        dump_ast(node->cdr);
         printf(")");
     }
     else if(!node->flag)
     {
-        // printf("flag: %d", node->flag);
-        printf("nil ");
+        printf("nil");
     }
     else 
     {
@@ -158,18 +149,21 @@ static void dump_ast(struct SEXPR* node)
 int main(int argc, char **argv)
 {
     //debug_parser("{ def!; 38239; f(); }");
-    lexer_t* lex = ZL1_create("f( () 443)", "<unknown>");
-    
-    struct SEXPR* node = zlmalloc(sizeof(struct SEXPR));
-    parse_expr(node, lex);
-    // visit_node(node, NULL);
+    lexer_t* lex = ZL1_create("{ this; dude; }(1 2 3)", "<unknown>");
+    struct SEXPR* node;
 
+    node = parse(lex);
     dump_ast(node);
     printf("\n");
+
+    node = analyze(node);
+    dump_ast(node);
+    printf("\n");
+
     // printf("codegen...\n");
     // codegen(node);    
 
-    free(node);
+    // free(node);
     ZL1_free(lex);
     return 0;
 }

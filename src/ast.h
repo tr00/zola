@@ -2,7 +2,7 @@
 #define __AST_H_
 
 enum {
-    // flag = 0 => nil
+    // 0 => nil
     AST_FLAG_ATOM = 0x1,
     AST_FLAG_CONS = 0x2,
     AST_FLAG_LIST = 0x4,
@@ -23,12 +23,13 @@ struct SEXPR {
     union {
         struct { char* atom; };
         struct {
-            struct SEXPR* car; // NULL == nil
+            struct SEXPR* car; 
             struct SEXPR* cdr;
         };
     };
 };
 
+int isnil(struct SEXPR*);
 extern struct SEXPR nil;
 
 #endif

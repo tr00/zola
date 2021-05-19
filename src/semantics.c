@@ -37,31 +37,33 @@ static int isbuiltin(char* name)
     return 0;
 }
 
-void analyze(struct SEXPR* sexpr)
+struct SEXPR* analyze(struct SEXPR* sexpr)
 {
     struct ZL_CONTEXT* ctx = NULL; // TODO: implement dispatcher
-    visit_node(sexpr, ctx);
+    return visit_node(sexpr, ctx);
 }
 
-void visit_node(struct SEXPR* sexpr, struct ZL_CONTEXT* ctx)
+struct SEXPR* visit_node(struct SEXPR* sexpr, struct ZL_CONTEXT* ctx)
 {
     const unsigned flag = sexpr->flag;
 
     if(flag & AST_FLAG_ATOM)
     {
-        visit_atom(sexpr, ctx);
+        return visit_atom(sexpr, ctx);
     }
     else if(flag & AST_FLAG_CALL)
     {
-        visit_call(sexpr, ctx);
+        return visit_call(sexpr, ctx);
     }
     else if(flag & AST_FLAG_LIST)
     {
-        visit_list(sexpr, ctx);
+        return visit_list(sexpr, ctx);
     }
+    printf("[WARNING]: couldnt optimize node\n");
+    return sexpr;
 }
 
-void visit_atom(struct SEXPR* atom, struct ZL_CONTEXT* ctx)
+struct SEXPR* visit_atom(struct SEXPR* atom, struct ZL_CONTEXT* ctx)
 {
     zlassert(atom, "visit_atom( NULL )");
     zlassert(atom->flag & AST_FLAG_ATOM, "visit_atom( non-atom )");
@@ -83,32 +85,37 @@ void visit_atom(struct SEXPR* atom, struct ZL_CONTEXT* ctx)
             // variable lookup
         }
     }
-
+    return atom;
 }
 
-void visit_call(struct SEXPR* args, struct ZL_CONTEXT* ctx)
+struct SEXPR* visit_call(struct SEXPR* args, struct ZL_CONTEXT* ctx)
 {
+    struct SEXPR* head = args;
     // TODO: analyze head & maybe inline
-    while(args)
+    while(args && args->flag != 0)
     {
-        visit_node(args->car, ctx);
+        args->car = visit_node(args->car, ctx);
         args = args->cdr;
     }
+    return head;
 }
 
 /**
  * only call on head
  */
-void visit_list(struct SEXPR* block, struct ZL_CONTEXT* ctx)
+struct SEXPR* visit_list(struct SEXPR* block, struct ZL_CONTEXT* ctx)
 {
     zlassert(block, "visit_block( NULL )");
     zlassert(block->car, "visit_block( corrupt )");
     struct SEXPR* head = block;
 
-    // { expr; } === expr
-    if(block->cdr == NULL)
+    // { expr; } ==> cons(expr nil) ==> expr
+    if(isnil(block->cdr)) 
     {
         visit_node(block->car, ctx);
+        struct SEXPR* tmp = block->car;
+        free(block);
+        return tmp;
     }
     printf("[WARNING]: only partial semantical analysis\n");
     // struct AST_NODE* node = ZL0_malloc(sizeof(struct AST_NODE));
@@ -116,6 +123,7 @@ void visit_list(struct SEXPR* block, struct ZL_CONTEXT* ctx)
     // local->parent = ctx;
     // TODO: 
     // always inline this
+    return block;
 }
 
 inline void assert_type(char* type, struct SEXPR* node, struct ZL_CONTEXT* ctx)

@@ -1,4 +1,4 @@
-#define __TRACE_PARSER
+// #define __TRACE_PARSER
 #include <string.h>
 #include <stdlib.h>
 #include <stdio.h>
@@ -12,6 +12,11 @@
 
 struct SEXPR nil = { .flag = 0, .type = "nil_t" };
 
+extern inline int __attribute__((always_inline)) isnil(struct SEXPR* sexpr)
+{
+    return sexpr->flag == 0;
+}
+
 /**
  * TODO:
  *  - better error messages
@@ -23,7 +28,7 @@ struct SEXPR nil = { .flag = 0, .type = "nil_t" };
  *
  *      atom ::= SYMBOL
  *      atom ::= INTEGER
- *      list ::= LBRACE stmt RBRACE
+ *      list ::= LBRACE stmt* RBRACE
  *      expr ::= [list|atom|LPAREN expr RPAREN] [LPAREN expr* RPAREN] [COLONS SYMBOL]
  *      expr ::= LPAREN expr RPAREN
  *      stmt ::= expr SEMICOLON
@@ -41,6 +46,11 @@ struct SEXPR nil = { .flag = 0, .type = "nil_t" };
  *      (g())()         == cons(cons(g nil) [call] nil) [call]
  */
 ;
+
+struct SEXPR* parse(lexer_t* lex)
+{
+    return parse_expr(zlmalloc(sizeof(struct SEXPR)), lex);
+}
 
 int parse_atom(struct SEXPR* atom, lexer_t* lex)
 {
@@ -67,7 +77,11 @@ int parse_atom(struct SEXPR* atom, lexer_t* lex)
 int parse_stmt(struct SEXPR* stmt, lexer_t* lex)
 {
     zlassert(lex, "parse_stmt( NULL )");
-    
+#ifdef __TRACE_PARSER
+    static int count = 0;
+    printf("parse_stmt#%d( ... )\n", ++count);
+#endif
+
     if(parse_expr(stmt, lex))
         return failure;
 
@@ -80,6 +94,10 @@ int parse_stmt(struct SEXPR* stmt, lexer_t* lex)
 int parse_list(struct SEXPR* list, lexer_t* lex)
 {
     zlassert(lex, "parse_list( NULL )");
+#ifdef __TRACE_PARSER
+    static int count = 0;
+    printf("parse_list#%d( ... )\n", ++count);
+#endif
 
     if(predict(ZL1_TOKEN_LBRACE, lex))
         return failure;
@@ -90,6 +108,8 @@ int parse_list(struct SEXPR* list, lexer_t* lex)
         return success;
     }
 
+    list->car = zlmalloc(sizeof(struct SEXPR));
+    list->flag = AST_FLAG_CONS | AST_FLAG_LIST;
     if(parse_stmt(list->car, lex))
         zlerror("expected statement or semicolon", NULL);
 
@@ -101,11 +121,12 @@ int parse_list(struct SEXPR* list, lexer_t* lex)
             zlerror("unexpected end of file", NULL);
 
         struct SEXPR* node = zlmalloc(sizeof(struct SEXPR));
+        node->flag = AST_FLAG_CONS | AST_FLAG_LIST;
         node->car = zlmalloc(sizeof(struct SEXPR));
 
         if(parse_stmt(node->car, lex))
             zlerror("expected statement or closing brace", NULL);
-
+        
         tail->cdr = node;
         tail = node;
     }
