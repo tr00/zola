@@ -29,4 +29,6 @@ struct SEXPR {
     };
 };
 
+extern struct SEXPR nil;
+
 #endif

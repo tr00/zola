@@ -1,4 +1,4 @@
-
+#define __TRACE_PARSER
 #include <string.h>
 #include <stdlib.h>
 #include <stdio.h>
@@ -9,6 +9,8 @@
 #include "scanner.h"
 #include "frontend.h"
 #include "errors.h"
+
+struct SEXPR nil = { .flag = 0, .type = "nil_t" };
 
 /**
  * TODO:
@@ -83,7 +85,10 @@ int parse_list(struct SEXPR* list, lexer_t* lex)
         return failure;
 
     if(predict(ZL1_TOKEN_RBRACE, lex) == success)
-        return success; // nil
+    {
+        list->cdr = &nil;
+        return success;
+    }
 
     if(parse_stmt(list->car, lex))
         zlerror("expected statement or semicolon", NULL);
@@ -104,6 +109,7 @@ int parse_list(struct SEXPR* list, lexer_t* lex)
         tail->cdr = node;
         tail = node;
     }
+    tail->cdr = &nil;
     return success;
 }
 
@@ -111,11 +117,18 @@ int parse_list(struct SEXPR* list, lexer_t* lex)
 int parse_expr(struct SEXPR* expr, lexer_t* lex)
 {
     zlassert(lex, "parse_expr( NULL )");
+#ifdef __TRACE_PARSER
+    static int count = 0;
+    printf("parse_expr#%d( ... )\n", ++count);
+#endif
     
     if(predict(ZL1_TOKEN_LPAREN, lex) == success)
     {
         if(predict(ZL1_TOKEN_RPAREN, lex) == success)
-            return success; // nil
+        {
+            *expr = nil;
+            return success;
+        }
 
         if(parse_expr(expr, lex) == failure)
             zlerror("expected expression", NULL);
@@ -138,9 +151,10 @@ int parse_expr(struct SEXPR* expr, lexer_t* lex)
         expr->type = NULL; // case: f :: i32 ();
         expr->flag = AST_FLAG_CONS | AST_FLAG_CALL;
 
-        if(predict(ZL1_TOKEN_RPAREN, lex) == success) // nil
+        if(predict(ZL1_TOKEN_RPAREN, lex) == success) 
         {
-
+            expr->cdr = &nil;
+            return success;
         }
         else
         {
@@ -156,7 +170,6 @@ int parse_expr(struct SEXPR* expr, lexer_t* lex)
             
             while(predict(ZL1_TOKEN_RPAREN, lex))
             {
-                printf("coggers!\n");
                 if(predict(ZL1_TOKEN_EOF, lex) == success)
                     zlerror("unexpected end of file", NULL);
 
@@ -170,6 +183,7 @@ int parse_expr(struct SEXPR* expr, lexer_t* lex)
                 tail->cdr = next;
                 tail = next;
             }
+            tail->cdr = &nil;
         }
     }
     

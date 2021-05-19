@@ -135,10 +135,14 @@ static void dump_ast(struct SEXPR* node)
         }
         printf(")");
     }
-    else
+    else if(!node->flag)
     {
         // printf("flag: %d", node->flag);
         printf("nil ");
+    }
+    else 
+    {
+        printf("oops!");
     }
 }
 
