@@ -1,6 +1,6 @@
-# ZOLA - Zen Optimization Language
+# ZOLA
 
-A simple high level language which is JIT-compiled to a custom VM. It focuses on producing efficient code for iterative algorithms.
+A simple high level language which is statically compiled to x86_64 and arm64. It focuses on producing efficient code for iterative algorithms.
 
 ## The Language
 
@@ -12,8 +12,4 @@ A simple high level language which is JIT-compiled to a custom VM. It focuses on
 
 ### Generators
 
-### Zen Optimization
-
-Zen Optimization uses previous iterations of loops to infer or assume information in order to optimize for upcoming iterations.
-
-## The Virtual Machine
+## The Backend
